@@ -28,6 +28,12 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score
 from sklearn.model_selection import GroupShuffleSplit
+import warnings
+
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.neural_network import MLPClassifier
+
+warnings.filterwarnings("ignore", category=ConvergenceWarning)  # fixed epoch budgets are intentional
 from sklearn.preprocessing import StandardScaler
 
 from common import HARD_CATEGORIES, HOP, ROOT, count_triggers, logit_scores
@@ -109,6 +115,12 @@ def main():
     ap.add_argument("--augment", action="store_true", help="also train on the noisy copies (embed.py --augment)")
     ap.add_argument("--hop", type=float, choices=[0.48, 0.24], default=0.48)
     ap.add_argument("--rule", default="2/3", help="k/n: trigger when k of the last n windows reach the threshold")
+    ap.add_argument("--model", choices=["logistic", "mlp"], default="logistic",
+                    help="classifier architecture: logistic regression or MLP")
+    ap.add_argument("--mlp-hidden", type=int, nargs="+", default=[128],
+                    help="hidden layer sizes for MLP (default: 128)")
+    ap.add_argument("--hard-neg-weight", type=float, default=1.0,
+                    help="sample weight multiplier for hard-negative categories (crowds, cheering, etc.)")
     args = ap.parse_args()
     rule_k, rule_n = map(int, args.rule.split("/"))
     if args.hop == 0.24 and not args.embeddings_offset:
@@ -133,7 +145,7 @@ def main():
 
     # Training windows (all phases): every negative window; for positives only the windows that
     # are loud in the ORIGINAL clip (noisy copies reuse their source's loud windows).
-    Xs, ys = [], []
+    Xs, ys, cats = [], [], []
     for D in phases:
         clip, rms, win = D["clip"], D["rms"], D["window"]
         mx = np.zeros(len(clip_label), np.float32)
@@ -145,8 +157,19 @@ def main():
         m = np.isin(clip, train_all) & ((clip_label[clip] == 0) | loud)
         Xs.append(features(D, args.features)[m])
         ys.append(clip_label[clip[m]])
-    Xtr, ytr = np.vstack(Xs), np.concatenate(ys)
+        cats.append(clip_cat[clip[m]])
+    Xtr, ytr, ctr = np.vstack(Xs), np.concatenate(ys), np.concatenate(cats)
     print(f"train windows: {ytr.sum()} positive, {(ytr == 0).sum()} negative ({args.features}, augment={args.augment})")
+
+    # Hard-negative sample weights: upweight negative windows from hard categories
+    # (playful screams, cheering, laughter, crowds…) so the model pushes them further from positives.
+    sample_w = np.ones(len(ytr), dtype=np.float64)
+    if args.hard_neg_weight > 1.0:
+        is_hard = np.array([str(c) in HARD_CATEGORIES for c in ctr])
+        hard_neg = is_hard & (ytr == 0)
+        sample_w[hard_neg] = args.hard_neg_weight
+        print(f"hard-negative weighting: {hard_neg.sum()} windows × {args.hard_neg_weight:.1f}")
+
     scaler = StandardScaler().fit(Xtr)
     Xtr_s = scaler.transform(Xtr)
 
@@ -162,16 +185,65 @@ def main():
             return {c: interleave(per_phase[0][c], per_phase[1][c]) for c in clips}
         return per_phase[0]
 
-    best = None
-    for C in (0.003, 0.01, 0.03, 0.1):
-        m = LogisticRegression(C=C, class_weight="balanced", max_iter=4000).fit(Xtr_s, ytr)
-        ws = window_scores(lambda F: m.predict_proba(scaler.transform(F))[:, 1], val_c)
-        per_clip = [ws[c] for c in val_c]
-        ap_val = average_precision_score(clip_label[val_c], [kth_peak(s, rule_k, rule_n) for s in per_clip])
-        print(f"  C={C:<6} val clip AP (fused) {ap_val:.4f}")
-        if best is None or ap_val > best[0]:
-            best = (ap_val, C, m, per_clip)
-    _, C, model, val_per_clip = best
+    if args.model == "logistic":
+        # ---------- Logistic regression (original path, now with sample weights) ----------
+        best = None
+        for C in (0.003, 0.01, 0.03, 0.1):
+            m = LogisticRegression(C=C, class_weight="balanced", max_iter=4000).fit(Xtr_s, ytr, sample_weight=sample_w)
+            ws = window_scores(lambda F: m.predict_proba(scaler.transform(F))[:, 1], val_c)
+            per_clip = [ws[c] for c in val_c]
+            ap_val = average_precision_score(clip_label[val_c], [kth_peak(s, rule_k, rule_n) for s in per_clip])
+            print(f"  C={C:<6} val clip AP (fused) {ap_val:.4f}")
+            if best is None or ap_val > best[0]:
+                best = (ap_val, C, m, per_clip)
+        _, best_C, model, val_per_clip = best
+        model_desc = f"yamnet {args.features} + logistic regression, fused with yamnet scream score"
+
+    else:
+        # ---------- MLP ----------
+        hidden = tuple(args.mlp_hidden)
+        # MLPClassifier doesn't support sample_weight or class_weight. Oversample positives
+        # to balance classes, and oversample hard negatives for emphasis.
+        pos_mask = ytr == 1
+        neg_mask = ytr == 0
+        n_pos, n_neg = pos_mask.sum(), neg_mask.sum()
+        # Balance: replicate positives to match negatives
+        rng = np.random.RandomState(args.seed)
+        pos_idx = np.flatnonzero(pos_mask)
+        oversample_idx = rng.choice(pos_idx, size=max(0, n_neg - n_pos), replace=True)
+        # Hard-neg emphasis: replicate hard negatives
+        extra_hard = np.array([], dtype=int)
+        if args.hard_neg_weight > 1.0:
+            hard_idx = np.flatnonzero(np.array([str(c) in HARD_CATEGORIES for c in ctr]) & neg_mask)
+            n_extra = int(len(hard_idx) * (args.hard_neg_weight - 1))
+            extra_hard = rng.choice(hard_idx, size=n_extra, replace=True)
+        all_idx = np.concatenate([np.arange(len(ytr)), oversample_idx, extra_hard])
+        rng.shuffle(all_idx)
+        Xtr_bal = Xtr_s[all_idx]
+        ytr_bal = ytr[all_idx]
+        print(f"MLP training set after balancing: {ytr_bal.sum()} pos, {(ytr_bal == 0).sum()} neg "
+              f"(hidden={hidden}, hard extra={len(extra_hard)})")
+
+        # No sklearn early_stopping: it holds out a random 10 % of WINDOWS, and after oversampling
+        # that holdout contains copies of training positives (and windows from training clips),
+        # so it can't detect overfitting. Instead the number of epochs and the L2 strength are
+        # picked on the group-held-out validation split, like everything else.
+        best = None
+        for alpha in (1e-3, 1e-2, 1e-1):
+            for epochs in (10, 30):
+                m = MLPClassifier(
+                    hidden_layer_sizes=hidden, activation="relu", solver="adam", alpha=alpha,
+                    max_iter=epochs, early_stopping=False, random_state=args.seed, batch_size=256,
+                ).fit(Xtr_bal, ytr_bal)
+                ws = window_scores(lambda F: m.predict_proba(scaler.transform(F))[:, 1], val_c)
+                per_clip = [ws[c] for c in val_c]
+                ap_val = average_precision_score(clip_label[val_c], [kth_peak(s, rule_k, rule_n) for s in per_clip])
+                print(f"  alpha={alpha:<6} epochs={epochs:<3} val clip AP (fused) {ap_val:.4f}")
+                if best is None or ap_val > best[0]:
+                    best = (ap_val, alpha, m, per_clip)
+        _, best_alpha, model, val_per_clip = best
+        best_C = best_alpha  # store in metrics as "C" for consistency
+        model_desc = f"yamnet {args.features} + mlp {list(hidden)}, fused with yamnet scream score"
 
     R = (rule_k, rule_n)
     # Threshold under a false-alarm budget on validation walk-like negatives.
@@ -188,13 +260,34 @@ def main():
     val_at = clip_metrics(val_per_clip, clip_label[val_c], threshold, *R)
     val_fa_walk, val_walk_h = stream_fa(val_neg_scores, val_neg, clip_cat, threshold, False, *R, args.hop)
     val_fa_hard, val_hard_h = stream_fa(val_neg_scores, val_neg, clip_cat, threshold, True, *R, args.hop)
-    print(f"chosen C={C}, threshold {threshold:.3f} → val {val_at}, FA walk-like {val_fa_walk:.2f}/h ({val_walk_h:.2f} h), hard {val_fa_hard:.1f}/h")
+    print(f"chosen {'C' if args.model == 'logistic' else 'alpha'}={best_C}, threshold {threshold:.3f} "
+          f"→ val {val_at}, FA walk-like {val_fa_walk:.2f}/h ({val_walk_h:.2f} h), hard {val_fa_hard:.1f}/h")
 
-    w = model.coef_[0] / scaler.scale_
-    b = float(model.intercept_[0] - np.sum(model.coef_[0] * scaler.mean_ / scaler.scale_))
+    # ---------- Export weights ----------
+    if args.model == "logistic":
+        w = model.coef_[0] / scaler.scale_
+        b = float(model.intercept_[0] - np.sum(model.coef_[0] * scaler.mean_ / scaler.scale_))
+        # For test inference, use the raw-feature formula directly
+        test_predict = lambda F: 1 / (1 + np.exp(-(F.astype(np.float64) @ w + b)))
+    else:
+        # MLP: fold the scaler into the first layer, export all layers
+        # Layer 0: W0_raw @ scaler.transform(x) + b0 = W0_raw @ ((x - mean) / scale) + b0
+        #         = (W0_raw / scale) @ x + (b0 - W0_raw @ (mean / scale))
+        w0 = model.coefs_[0].T / scaler.scale_[None, :]  # (out, in) / (1, in)
+        b0 = model.intercepts_[0] - (model.coefs_[0].T @ (scaler.mean_ / scaler.scale_))
+        # For test inference with raw (unscaled) features
+        def test_predict(F):
+            x = F.astype(np.float64)
+            x = x @ w0.T + b0
+            x = np.maximum(0, x)
+            for i in range(1, len(model.coefs_)):
+                x = x @ model.coefs_[i] + model.intercepts_[i]
+                if i < len(model.coefs_) - 1:
+                    x = np.maximum(0, x)
+            return 1 / (1 + np.exp(-np.clip(x[:, 0] if x.ndim == 2 else x, -500, 500)))
 
     # Test, touched once.
-    tws = window_scores(lambda F: 1 / (1 + np.exp(-(F.astype(np.float64) @ w + b))), test_c)
+    tws = window_scores(test_predict, test_c)
     test_per_clip = [tws[c] for c in test_c]
     test = clip_metrics(test_per_clip, clip_label[test_c], threshold, *R)
     # Baseline = spec stage A exactly: YAMNet-only, 0.48 s hop, 2 of 3, threshold 0.5.
@@ -221,20 +314,42 @@ def main():
 
     hop_samples = int(round(args.hop * 16000))
     head = {
-        "model": f"yamnet {args.features} + logistic regression, fused with yamnet scream score",
+        "model": model_desc,
+        "model_type": args.model,
         "features": args.features,
         "fusion": FUSION,
-        "weights": [round(float(v), 7) for v in w],
-        "bias": round(b, 7),
         "threshold": threshold,
         "hop_samples": hop_samples,
         "rule_k": rule_k,
         "rule_n": rule_n,
-        "rule": f"{rule_k} of last {rule_n} windows (hop {args.hop} s) >= threshold; score = sqrt(sigmoid(w·x+b) * max(Screaming, Shout, Yell))",
+        "rule": f"{rule_k} of last {rule_n} windows (hop {args.hop} s) >= threshold; score = sqrt(p * max(Screaming, Shout, Yell)), p = classifier probability",
         "augmented_training": bool(args.augment),
         "trained": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "C": C,
+        "C": best_C,
     }
+    if args.model == "logistic":
+        head["weights"] = [round(float(v), 7) for v in w]
+        head["bias"] = round(b, 7)
+    else:
+        head["layers"] = []
+        head["layers"].append({
+            "weights": [round(float(v), 7) for v in w0.flatten()],
+            "bias": [round(float(v), 7) for v in b0],
+            "in_features": w0.shape[1],
+            "out_features": w0.shape[0],
+            "activation": "relu"
+        })
+        for i in range(1, len(model.coefs_)):
+            cw = model.coefs_[i].T
+            cb = model.intercepts_[i]
+            head["layers"].append({
+                "weights": [round(float(v), 7) for v in cw.flatten()],
+                "bias": [round(float(v), 7) for v in cb],
+                "in_features": cw.shape[1],
+                "out_features": cw.shape[0],
+                "activation": "linear" if i == len(model.coefs_) - 1 else "relu"
+            })
+
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     json.dump(head, open(args.out, "w"))
     print(f"wrote {args.out}")
@@ -264,7 +379,7 @@ def main():
         "split": "GroupShuffleSplit by uploader/source recording: 64% train / 16% val / 20% test",
         "split_seed": used_seed,
         "threshold_rule": f"best validation recall with <= {args.fa_budget} false alarms/hour on validation walk-like negatives",
-        "C": C,
+        "C": best_C,
         "train_clips": {"positives": int(clip_label[train_c].sum()), "negatives": int((clip_label[train_c] == 0).sum()),
                         "noisy_copies": int(len(train_aug)) if args.augment else 0},
         "val_clips": {"positives": int(clip_label[val_c].sum()), "negatives": int((clip_label[val_c] == 0).sum())},

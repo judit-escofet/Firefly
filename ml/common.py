@@ -102,11 +102,23 @@ def logit_scores(scores):
 def head_score(head, emb, yam=None, scores=None):
     """Same as headScore() in app/src/guardian/audio/windows.js.
     features "embedding+logit_scores": w has 1024 + 521 entries (embedding, then class log-odds).
-    fusion "geomean_yamnet": sqrt(sigmoid(w·x + b) × YAMNet scream score)."""
-    w = np.asarray(head["weights"], dtype=np.float64)
+    fusion "geomean_yamnet": sqrt(sigmoid(w·x + b) × YAMNet scream score).
+    model_type "mlp": multi-layer perceptron with ReLU hidden layers."""
     x = emb if head.get("features", "embedding") == "embedding" else np.hstack([emb, logit_scores(scores)])
-    z = x @ w + head["bias"]
-    p = 1 / (1 + np.exp(-z))
+    if head.get("model_type") == "mlp":
+        # MLP: iterate through layers
+        for layer in head["layers"]:
+            w = np.asarray(layer["weights"], dtype=np.float64).reshape(layer["out_features"], layer["in_features"])
+            b = np.asarray(layer["bias"], dtype=np.float64)
+            x = x @ w.T + b
+            if layer.get("activation") == "relu":
+                x = np.maximum(0, x)
+        z = x if np.ndim(x) == 0 else x[..., 0] if x.shape[-1] == 1 else x
+    else:
+        # Linear (logistic regression): w·x + b
+        w = np.asarray(head["weights"], dtype=np.float64)
+        z = x @ w + head["bias"]
+    p = 1 / (1 + np.exp(-np.clip(z, -500, 500)))
     if head.get("fusion") == "geomean_yamnet":
         if yam is None:
             raise ValueError("this head fuses the YAMNet scream score; pass yam")

@@ -112,6 +112,26 @@ describe('scoring + trigger rule', () => {
     expect(() => validateHead({ ...head, weights: new Array(1024).fill(0) })).toThrow();
   });
 
+  it('MLP head: relu hidden layer, linear output, sigmoid, then fusion', () => {
+    // 1024 → 2 (relu) → 1. Hidden unit 0 sees e[0], unit 1 sees −e[0]; output = h0 + h1 − 1.
+    const w0 = new Array(2 * 1024).fill(0);
+    w0[0] = 1;
+    w0[1024] = -1;
+    const head = validateHead({
+      model_type: 'mlp', threshold: 0.4, fusion: 'geomean_yamnet',
+      layers: [
+        { in_features: 1024, out_features: 2, weights: w0, bias: [0, 0], activation: 'relu' },
+        { in_features: 2, out_features: 1, weights: [1, 1], bias: [-1], activation: 'linear' },
+      ],
+    });
+    const e = new Array(1024).fill(0);
+    e[0] = 3; // h = [3, 0] → z = 2
+    expect(headScore(head, e, 0.5)).toBeCloseTo(Math.sqrt(0.5 / (1 + Math.exp(-2))), 9);
+    e[0] = -3; // h = [0, 3] → z = 2 (relu keeps the sign symmetric)
+    expect(headScore(head, e, 0.5)).toBeCloseTo(Math.sqrt(0.5 / (1 + Math.exp(-2))), 9);
+    expect(() => validateHead({ ...head, layers: [{ ...head.layers[0], bias: [0] }] })).toThrow();
+  });
+
   it('triggers on 2 of the last 3 windows ≥ threshold, then clears', () => {
     const rule = createTriggerRule({ threshold: 0.5 });
     expect(rule.push(0.9).triggered).toBe(false);

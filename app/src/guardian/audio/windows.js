@@ -55,6 +55,30 @@ export function yamnetOnlyScore(classScores) {
 // fusion "geomean_yamnet": score = sqrt(sigmoid(w·x + b) × YAMNet scream score) — the classifier
 //   only fires when YAMNet also hears something scream-like.
 export function headScore(head, embedding, yamnetScore, classScores) {
+  if (head.model_type === 'mlp') {
+    // Build input vector: embedding, optionally with logit_scores appended
+    let x = new Float64Array(embedding.length + (head.features === 'embedding+logit_scores' ? 521 : 0));
+    for (let i = 0; i < 1024; i++) x[i] = embedding[i];
+    if (head.features === 'embedding+logit_scores') {
+      for (let j = 0; j < 521; j++) {
+        const p = Math.min(1 - 1e-4, Math.max(1e-4, classScores[j]));
+        x[1024 + j] = Math.log(p / (1 - p));
+      }
+    }
+    // Forward pass through each layer
+    for (const layer of head.layers) {
+      const out = new Float64Array(layer.out_features);
+      for (let j = 0; j < layer.out_features; j++) {
+        let z = layer.bias[j];
+        const rowOffset = j * layer.in_features;
+        for (let i = 0; i < layer.in_features; i++) z += layer.weights[rowOffset + i] * x[i];
+        out[j] = layer.activation === 'relu' ? Math.max(0, z) : z;
+      }
+      x = out;
+    }
+    const p = 1 / (1 + Math.exp(-x[0]));
+    return head.fusion === 'geomean_yamnet' ? Math.sqrt(p * yamnetScore) : p;
+  }
   let z = head.bias;
   for (let i = 0; i < 1024; i++) z += head.weights[i] * embedding[i];
   if (head.features === 'embedding+logit_scores') {
@@ -68,10 +92,24 @@ export function headScore(head, embedding, yamnetScore, classScores) {
 }
 
 export function validateHead(head) {
-  const nWeights = head?.features === 'embedding+logit_scores' ? 1024 + 521 : 1024;
+  if (!head) throw new Error('head is required');
   if (head?.features !== undefined && !['embedding', 'embedding+logit_scores'].includes(head.features)) throw new Error(`unknown features "${head.features}"`);
-  if (!head || !Array.isArray(head.weights) || head.weights.length !== nWeights) throw new Error(`weights must be ${nWeights} numbers`);
-  if (!Number.isFinite(head.bias)) throw new Error('bias missing');
+  if (head.model_type === 'mlp') {
+    if (!Array.isArray(head.layers) || head.layers.length < 1) throw new Error('mlp head must have at least one layer');
+    for (let l = 0; l < head.layers.length; l++) {
+      const layer = head.layers[l];
+      if (!Number.isInteger(layer.in_features) || !Number.isInteger(layer.out_features))
+        throw new Error(`layer ${l}: in_features and out_features must be integers`);
+      if (!Array.isArray(layer.weights) || layer.weights.length !== layer.in_features * layer.out_features)
+        throw new Error(`layer ${l}: weights must be ${layer.in_features * layer.out_features} numbers`);
+      if (!Array.isArray(layer.bias) || layer.bias.length !== layer.out_features)
+        throw new Error(`layer ${l}: bias must be ${layer.out_features} numbers`);
+    }
+  } else {
+    const nWeights = head?.features === 'embedding+logit_scores' ? 1024 + 521 : 1024;
+    if (!Array.isArray(head.weights) || head.weights.length !== nWeights) throw new Error(`weights must be ${nWeights} numbers`);
+    if (!Number.isFinite(head.bias)) throw new Error('bias missing');
+  }
   if (!Number.isFinite(head.threshold)) throw new Error('threshold missing');
   if (head.fusion !== undefined && head.fusion !== 'geomean_yamnet') throw new Error(`unknown fusion "${head.fusion}"`);
   if (head.hop_samples !== undefined && !(Number.isInteger(head.hop_samples) && head.hop_samples >= 1600 && head.hop_samples <= HOP_SAMPLES))
