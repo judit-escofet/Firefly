@@ -1,0 +1,87 @@
+import React, { useEffect, useState } from 'react';
+import { PhoneCall, PhoneOff, Mic, MicOff, X } from 'lucide-react';
+import { bus } from '../bus';
+import { hangUpDispatchCall, toggleDispatchMute, dismissDispatchCall } from '../services/dispatchCall';
+
+// The in-app emergency call (simulated 911): status, timer, mute, hang up, and a tap-to-call
+// fallback. Driven only by dispatch.call events from services/dispatchCall.js.
+const STATUS = {
+  connecting: 'Connecting…',
+  ringing: 'Ringing the dispatcher…',
+  automated: 'The dispatcher is being called with your location.',
+  ended: 'Call ended.',
+  failed: "Couldn't connect in the app.",
+};
+
+function mmss(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+export default function DispatchCallPanel() {
+  const [call, setCall] = useState(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => bus.on('dispatch.call', (e) => setCall(e.state === 'idle' ? null : e)), []);
+  useEffect(() => {
+    if (call?.state !== 'connected') return undefined;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [call?.state]);
+
+  if (!call) return null;
+  const live = ['connecting', 'ringing', 'connected'].includes(call.state);
+  const status = call.state === 'connected' ? `Connected · ${mmss(now - (call.connected_at ?? now))}` : STATUS[call.state];
+
+  return (
+    <div role="dialog" aria-live="assertive" aria-label="Emergency call"
+      className="w-full p-4 rounded-3xl bg-twilight-950/95 border border-crimson-400/60 shadow-2xl text-white animate-fade-in">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${live ? 'bg-crimson-600 animate-pulse' : 'bg-twilight-800'}`}>
+            <PhoneCall className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="font-bold text-base leading-tight">Emergency call</div>
+            <div className="text-xs text-pastel-lavender">Demo 911 · {call.display}</div>
+          </div>
+        </div>
+        {!live && (
+          <button onClick={dismissDispatchCall} aria-label="Close" className="p-1.5 rounded-full text-pastel-lavender hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      <div className="mt-3 text-sm font-semibold" data-testid="dispatch-status">
+        {call.mode === 'mock' && live ? `${status} (simulated)` : status}
+      </div>
+
+      {live && (
+        <div className="mt-3 flex gap-3">
+          <button onClick={toggleDispatchMute}
+            className="flex-1 py-3 rounded-2xl glass-mythic font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98]">
+            {call.muted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            {call.muted ? 'Unmute' : 'Mute'}
+          </button>
+          <button onClick={hangUpDispatchCall}
+            className="flex-1 py-3 rounded-2xl bg-crimson-600 font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98]">
+            <PhoneOff className="w-4 h-4" /> Hang up
+          </button>
+        </div>
+      )}
+
+      {(call.state === 'failed' || call.state === 'automated') && (
+        <a href={`tel:${call.tel}`}
+          className="mt-3 w-full py-3 rounded-2xl bg-crimson-600 font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98]">
+          <PhoneCall className="w-4 h-4" /> Call {call.display} from your phone
+        </a>
+      )}
+
+      <p className="mt-3 text-[11px] leading-snug text-pastel-lavender">
+        <strong className="text-gold-200">Simulation:</strong> this calls a demo number standing in for 911. In the full
+        product, a monitoring service would contact dispatch.
+      </p>
+    </div>
+  );
+}

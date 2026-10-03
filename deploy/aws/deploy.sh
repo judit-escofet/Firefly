@@ -21,6 +21,9 @@ REGION="${AWS_DEFAULT_REGION:-${AWS_REGION:-us-west-2}}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
+# Windows Git Bash: hand Windows-style paths (C:/...) to aws.exe, node and python; /tmp/... and
+# fileb:///tmp/... don't resolve for native Windows programs. Bash accepts C:/... too.
+if command -v cygpath >/dev/null 2>&1; then WORK="$(cygpath -m "$WORK")"; ROOT="$(cygpath -m "$ROOT")"; fi
 aws() { command aws --region "$REGION" "$@"; }
 
 if [[ "${1:-}" == "--teardown" ]]; then
@@ -75,14 +78,24 @@ echo "   function.zip: $((SIZE / 1024 / 1024)) MB"
 if (( SIZE > 50 * 1024 * 1024 )); then echo "!! over Lambda's 50 MB direct-upload limit"; exit 1; fi
 
 echo "== environment (from api/local.settings.json; keys are not printed)"
+# Merge into what the live function already has, so a teammate deploying without (say) the Gemini
+# key in their own local.settings.json doesn't wipe it. Local values win.
+aws lambda get-function-configuration --function-name "$NAME" --query Environment.Variables --output json   > "$WORK/existing.json" 2>/dev/null || echo '{}' > "$WORK/existing.json"
 node -e '
-  const v = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).Values || {};
-  const keep = {};
+  const fs = require("fs");
+  let existing = {};
+  try { existing = JSON.parse(fs.readFileSync(process.argv[3], "utf8")) || {}; } catch {}
+  const v = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).Values || {};
+  const keep = { ...existing };
   for (const [k, val] of Object.entries(v)) if (val && !["FUNCTIONS_WORKER_RUNTIME", "AzureWebJobsStorage"].includes(k)) keep[k] = val;
   keep.COMPANION_DATA_DIR = "/tmp/firefly-data";
-  require("fs").writeFileSync(process.argv[2], JSON.stringify({ Variables: keep }));
+  const out = JSON.stringify({ Variables: keep });
+  if (out.length > 4000) { console.error("!! Lambda allows 4 KB of environment variables; these are " + out.length + " bytes"); process.exit(1); }
+  fs.writeFileSync(process.argv[2], out);
+  const kept = Object.keys(existing).filter((k) => !(k in v));
   console.log("   variables:", Object.keys(keep).join(", "));
-' "$ROOT/api/local.settings.json" "$WORK/env.json"
+  if (kept.length) console.log("   kept from the live function:", kept.join(", "));
+' "$ROOT/api/local.settings.json" "$WORK/env.json" "$WORK/existing.json"
 
 echo "== role $ROLE"
 if ! ROLE_ARN=$(aws iam get-role --role-name "$ROLE" --query Role.Arn --output text 2>/dev/null); then
@@ -123,6 +136,9 @@ node -e '
 ' "$WORK/env.json" "$URL"
 aws lambda update-function-configuration --function-name "$NAME" --environment "file://$WORK/env.json" --query LastModified --output text >/dev/null
 aws lambda wait function-updated --function-name "$NAME"
+
+echo "== Vonage webhooks (in-app emergency calls)"
+node "$ROOT/api/scripts/vonage-webhooks.js" "$URL"
 
 echo "== smoke test"
 curl -s -o /dev/null -w "   /                 → %{http_code}\n" "$URL/"

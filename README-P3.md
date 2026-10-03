@@ -98,13 +98,35 @@ The same code runs these ways:
 | **AWS Workshop Studio sandbox, whole app (use this)** | `deploy/aws/deploy.sh` (the team's) | App + API + tracking page on one Lambda URL. Run from Git Bash with `FIREFLY_ROLE=DemoToolLambdaRole`; it copies `api/local.settings.json` into the Lambda |
 | AWS Workshop Studio sandbox, API only | `deploy-workshop.ps1` | That sandbox blocks CloudFormation, API Gateway, Amazon Location and S3, so it uses a Lambda function URL, straight-line routes and clips stored in Tiger Data, and the page polls every 3 s |
 
+## Emergency calling (simulated 911)
+
+Firefly never calls real 911. For the demo, **312-826-2020** stands in for 911 (`DISPATCH_NUMBER`), and the
+code refuses 911, other emergency short codes and N11 numbers even if one is configured.
+
+| Trigger | What happens |
+|---|---|
+| Scream or code phrase, countdown runs out | The app calls 312-826-2020 itself. The dispatcher first hears a report (name, trigger, last location, "this is a simulation"), then talks with her through the app's mic and speaker. They also get a text with her live tracking link. |
+| "Call 911" button | The same call, straight away |
+| Duress PIN | Her screen says "All good"; the server calls 312-826-2020 with the spoken report (no visible call) |
+| In-app calling unavailable | The server places the automated call; failing that, she gets a tap-to-call button |
+
+Provider: **Vonage** when `VONAGE_APPLICATION_ID` + `VONAGE_PRIVATE_KEY` + `VONAGE_FROM_NUMBER` are set, otherwise Twilio.
+Demo mode (`?mock=1`) simulates the call on screen and dials nothing.
+
+**Set up Vonage (once):** `cd api && node scripts/setup-vonage.js`. It asks for the API key and secret (hidden),
+finds `private_*.key` in Downloads, checks everything with Vonage, links the number to the application, saves
+`api/local.settings.json`, and offers one test call. On a trial account, add 312-826-2020 under **Test numbers** first.
+
+**Deploy:** `deploy/aws/deploy.sh` copies those settings into the Lambda (merged with what's already there, so it
+never wipes a teammate's keys) and points the Vonage application's Answer/Event URLs at the live app.
+
 ## Tests
 
 ```
 cd api && npm test
 ```
 
-29 tests:
+46 tests:
 - route math on a hand-made L-shaped route (W4, W5)
 - validation 400s (W1)
 - the exact alert text and the 60 s guard (W6)

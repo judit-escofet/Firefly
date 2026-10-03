@@ -6,6 +6,7 @@ const {
   handle, readJson, json, badRequest, notFound, optionalTs, requireWalkId, isNum, baseUrl,
 } = require('../../lib/http');
 const { loadWalk, raiseAlert, markArrived, logEvent } = require('../../lib/walks');
+const { automatedDispatchCall } = require('../../lib/dispatch');
 
 const ALERT_TYPES = new Set(['alert_sent', 'duress']);
 const KNOWN = new Set(['source', 'confidence', 'clip_url', 'ts', 'type']);
@@ -56,7 +57,15 @@ app.http('events', {
 
     let outcome = { texted: [] };
     if (ALERT_TYPES.has(ev.type)) {
-      outcome = await raiseAlert(walk, { clipUrl: ev.clip_url, base: baseUrl(request), log: context });
+      const base = baseUrl(request);
+      outcome = await raiseAlert(walk, { clipUrl: ev.clip_url, base, log: context });
+      // Duress: her screen shows "All good", so there is no visible in-app call. The simulated
+      // dispatcher is called automatically instead (its own once-a-minute guard).
+      if (ev.type === 'duress') {
+        const call = await automatedDispatchCall(walk, { reason: 'duress', base, log: context });
+        outcome.dispatch_called = call.called;
+        if (call.called) await logEvent(walkId, { ts: new Date(), type: 'dispatch_call', source: 'duress', data: { mode: 'automated', call_sid: call.call_sid || null } });
+      }
     } else if (ev.type === 'arrived') {
       outcome = await markArrived(walk, { log: context });
     }

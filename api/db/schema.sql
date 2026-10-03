@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS walks (
   ended_at         TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS walks_user_idx ON walks (user_id, started_at DESC);
+-- Once-a-minute guard for automated (simulated 911) dispatch calls.
+ALTER TABLE walks ADD COLUMN IF NOT EXISTS last_dispatch_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS memories (
   memory_id        BIGSERIAL PRIMARY KEY,

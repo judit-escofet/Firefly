@@ -6,6 +6,7 @@ import { wakeLockService } from './services/wakeLock';
 import { hashPin, getOrCreateUserId } from './crypto';
 import { setMockMode, MOCK_PROFILE, MOCK_ROUTE } from './services/mockData';
 import { acquireMic } from './audio/micHub.js';
+import { startDispatchCall, hangUpDispatchCall, dismissDispatchCall } from './services/dispatchCall';
 
 import WelcomeScreen from './screens/WelcomeScreen';
 import SetupScreen from './screens/SetupScreen';
@@ -46,19 +47,27 @@ export default function App({ modules }) {
   const heldMic = useRef(null);
   const walkRef = useRef(null);
 
-  // Follow the Guardian's escalation state.
-  useEffect(
-    () =>
+  // Follow the Guardian's escalation state. When the countdown runs out ("alerted"), call the demo
+  // dispatcher from the app. (A duress PIN never reaches "alerted" on screen; the backend calls
+  // the dispatcher silently for that one.)
+  const lastDanger = useRef('scream');
+  useEffect(() => {
+    const offs = [
+      bus.on('danger.signal', (e) => {
+        if (e.source) lastDanger.current = e.source;
+      }),
       bus.on('alert.state', (e) => {
         setAlert({ state: e.state, seconds_left: e.seconds_left });
         if (e.state === 'countdown') setShowCountdown(true);
         if (e.state === 'alerted') {
           setShowCountdown(false);
           setAlerted(true);
+          if (walkRef.current) startDispatchCall(walkRef.current, { reason: lastDanger.current });
         }
       }),
-    [],
-  );
+    ];
+    return () => offs.forEach((off) => off());
+  }, []);
 
   const endWalk = useCallback(async (reason) => {
     const w = walkRef.current;
@@ -66,6 +75,8 @@ export default function App({ modules }) {
     walkRef.current = null;
     locationService.stop();
     wakeLockService.disable();
+    hangUpDispatchCall();
+    dismissDispatchCall();
     const s = await api.endWalk(w, reason);
     bus.emit('walk.ended', { reason });
     heldMic.current?.release(); // P1/P2 hold their own references until they're done

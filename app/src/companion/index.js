@@ -41,6 +41,7 @@ export function startCompanion({ mock = isMock(), clock = realClock } = {}) {
   let mic = null;
   let transcriber = null;
   let lastSpoken = { text: '', until: 0 }; // what the firefly is saying (for the echo filter)
+  let onDispatchCall = false; // quiet while she's on the emergency call (dispatch.call)
 
   const voice = createVoice({
     api,
@@ -56,7 +57,7 @@ export function startCompanion({ mock = isMock(), clock = realClock } = {}) {
   const brain = createBrain({
     clock,
     say: (text, { t0 }) =>
-      voice.say(text, {
+      onDispatchCall ? Promise.resolve() : voice.say(text, {
         t0,
         onStart: (ms) => {
           status.lastLatencyMs = Math.round(ms);
@@ -129,6 +130,10 @@ export function startCompanion({ mock = isMock(), clock = realClock } = {}) {
     'speech.heard': (e) => brain.heard(e),
     'checkin.request': (e) => brain.checkinRequest(e),
     'alert.state': (e) => brain.alertState(e),
+    'dispatch.call': (e) => {
+      onDispatchCall = ['connecting', 'ringing', 'connected'].includes(e.state);
+      if (onDispatchCall && voice.speaking) voice.stop();
+    },
     'walk.ended': async (e) => {
       const turns = brain.history;
       brain.stop();

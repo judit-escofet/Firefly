@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { bus } from '../bus';
 import { wakeLockService } from '../services/wakeLock';
-import { isMockModeEnabled } from '../services/mockData';
 import MapCanvas from '../components/MapCanvas';
 import FireflyCompanion from '../components/FireflyCompanion';
-import Emergency911Modal from '../components/Emergency911Modal';
+import DispatchCallPanel from '../components/DispatchCallPanel';
+import { startDispatchCall, DEMO_DISPATCH_TEL } from '../services/dispatchCall';
 import { PhoneCall, Clock, Navigation, X, Info } from 'lucide-react';
 
 /**
  * Walk screen (P4 spec 2): full-screen map with the glowing route and her trail, the firefly
  * (glows only while speaking, A5), ETA and distance, a small "listening" indicator, a big
- * Call 911 button (a real tel: link she presses herself; a demo sheet in mock mode, A9) and
- * End walk. Everything shown comes from the bus: position.updated, companion.speaking.
+ * Call 911 button and End walk. For the demo, "Call 911" places an in-app call to the demo
+ * dispatch number (312-826-2020, never real 911): see services/dispatchCall.js. In mock mode the
+ * call is simulated on screen. Everything shown comes from the bus: position.updated, companion.speaking.
  */
 export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }) {
   const [position, setPosition] = useState(null);
@@ -22,7 +23,6 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
   const [caption, setCaption] = useState(null);
   const [heard, setHeard] = useState(null);
   const [wakeLock, setWakeLock] = useState({ active: false, supported: true });
-  const [show911Demo, setShow911Demo] = useState(false);
   const [listening, setListening] = useState('starting');
 
   useEffect(() => {
@@ -61,11 +61,10 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
     return () => clearTimeout(t);
   }, [speaking, caption]);
 
+  // The href (tel: the demo number) is only the no-JavaScript fallback.
   const handle911Press = (e) => {
-    if (isMockModeEnabled()) {
-      e.preventDefault();
-      setShow911Demo(true);
-    }
+    e.preventDefault();
+    startDispatchCall(walk, { reason: 'button' });
   };
 
   const etaMinutes = Math.max(1, Math.ceil(eta / 60));
@@ -79,6 +78,8 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
       </div>
 
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-col gap-2 max-w-md mx-auto">
+        <DispatchCallPanel />
+
         {alerted && (
           <div className="p-3 rounded-2xl glass-mythic-card flex items-center gap-2.5 text-xs text-gold-200 animate-fade-in shadow-xl">
             <div className="w-2.5 h-2.5 rounded-full bg-gold-400 shrink-0" />
@@ -133,7 +134,7 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
       <div className="absolute bottom-5 left-4 right-4 z-20 max-w-md mx-auto flex flex-col gap-3" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex items-center gap-3">
           <a
-            href="tel:911"
+            href={`tel:${DEMO_DISPATCH_TEL}`}
             onClick={handle911Press}
             className="flex-1 py-4 px-5 rounded-2xl bg-gradient-to-r from-crimson-600 via-rose-700 to-crimson-700 text-white font-extrabold text-base flex items-center justify-center gap-2.5 shadow-xl active:scale-[0.98] transition-transform touch-manipulation border border-crimson-400/50"
           >
@@ -150,7 +151,6 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
         </div>
       </div>
 
-      <Emergency911Modal isOpen={show911Demo} onClose={() => setShow911Demo(false)} currentCoords={position} />
     </div>
   );
 }

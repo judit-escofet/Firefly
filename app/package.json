@@ -24,6 +24,8 @@
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
     "@tensorflow/tfjs-backend-wasm": "^4.22.0",
+    "@twilio/voice-sdk": "^2.18.5",
+    "@vonage/client-sdk": "^2.7.5",
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.51.0",
