@@ -14,7 +14,7 @@ They match the real responses field for field; update them whenever a real respo
 | scores.post.json | POST /api/walks/{walk_id}/scores |
 | clip.post.json | POST /api/walks/{walk_id}/clip (201) |
 | end.post.json | POST /api/walks/{walk_id}/end |
-| negotiate.get.json | GET /api/negotiate?token= |
+| negotiate.get.json | GET /api/negotiate?token= (WebSocket URL) |
 | track.get.json | GET /api/track/{share_token} |
 | error.400.json | any bad input |
-| pubsub-messages.json | messages pushed to the tracking page's Web PubSub group |
+| live-messages.json | messages pushed to tracking pages over the WebSocket |

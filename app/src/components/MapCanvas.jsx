@@ -1,18 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { isMockModeEnabled } from '../services/mockData';
 
-// Tiles: Azure Maps through P3's proxy (/api/tiles, key stays on the server; light road style,
-// darkened in CSS) — or, when that isn't configured/reachable and in mock mode, Esri's dark
-// tiles (Esri dark gray). With no network at all the route, trail and markers still draw on the dark background.
-const AZURE_TILES = '/api/tiles/{z}/{x}/{y}';
-// Esri's dark gray canvas: free, no key (CARTO's basemaps now require one).
+// Tiles: Esri's dark gray canvas (free, no key). With no network the route, trail and markers
+// still draw on the dark background (mock mode with Wi-Fi off).
 const DARK_TILES = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
 /**
  * Enchanted Grove Map Component powered by Leaflet
  * Features:
- * - CartoDB Dark / Mystic Grove tile layer with custom subdued green tint
+ * - Esri dark gray tile layer with a subdued green tint
  * - Glowing enchanted route polyline
  * - Fading trail points behind the walker
  * - Custom SVG firefly marker that pulses and lights up when speaking
@@ -52,24 +48,9 @@ export default function MapCanvas({
 
     mapInstanceRef.current = map;
 
-    const useDarkTiles = () => {
-      const dark = L.tileLayer(DARK_TILES, { maxZoom: 19, maxNativeZoom: 16, className: 'tiles-dark' });
-      dark.on("tileerror", () => setOfflineTiles(true));
-      dark.addTo(map);
-    };
-    if (isMockModeEnabled()) {
-      useDarkTiles();
-    } else {
-      const azure = L.tileLayer(AZURE_TILES, { maxZoom: 19, className: 'tiles-azure' });
-      let errors = 0;
-      azure.on('tileerror', () => {
-        if (++errors === 2) {
-          map.removeLayer(azure);
-          useDarkTiles();
-        }
-      });
-      azure.addTo(map);
-    }
+    const dark = L.tileLayer(DARK_TILES, { maxZoom: 19, maxNativeZoom: 16, className: 'tiles-dark' });
+    dark.on('tileerror', () => setOfflineTiles(true)); // offline: route, trail and markers still draw
+    dark.addTo(map);
 
     return () => {
       if (mapInstanceRef.current) {

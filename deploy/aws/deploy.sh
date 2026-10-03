@@ -8,7 +8,8 @@
 #     (AWS Workshop Studio: DemoToolLambdaRole has only AWSLambdaBasicExecutionRole)
 #
 # Why one Lambda: the mic needs HTTPS and the app expects /api on the same origin. The function
-# URL is HTTPS; lambda.js serves app/dist and runs the Azure-Functions-style API under /api/*.
+# URL is HTTPS; api/src/lambda.js runs the API (/api/*), the tracking page (/track/*) and serves
+# the built app (bundled as ./public). (P3's deploy-workshop.ps1 deploys the API alone.)
 # API keys come from api/local.settings.json (git-ignored) and become Lambda environment
 # variables. The URL is PUBLIC: anyone with it can use the app (and the Gemini/ElevenLabs
 # credit behind /api/companion/*). Tear it down after the demo.
@@ -41,7 +42,8 @@ echo "== build app"
 echo "== package"
 PKG="$WORK/pkg"
 mkdir -p "$PKG"
-cp -R "$ROOT/api/src" "$ROOT/api/lib" "$ROOT/api/db" "$ROOT/api/lambda.js" "$ROOT/api/package.json" "$ROOT/api/package-lock.json" "$PKG/"
+cp -R "$ROOT/api/src" "$ROOT/api/lib" "$ROOT/api/db" "$ROOT/api/package.json" "$ROOT/api/package-lock.json" "$PKG/"
+mkdir -p "$PKG/static" && cp "$ROOT/app/public/track/index.html" "$PKG/static/track.html"
 (cd "$PKG" && npm ci --omit=dev --silent)
 cp -R "$ROOT/app/dist" "$PKG/public"
 (cd "$PKG" && zip -qr9 "$WORK/function.zip" . -x '*.map')
@@ -72,10 +74,10 @@ echo "== function $NAME"
 if aws lambda get-function --function-name "$NAME" >/dev/null 2>&1; then
   aws lambda update-function-code --function-name "$NAME" --zip-file "fileb://$WORK/function.zip" --query LastModified --output text
   aws lambda wait function-updated --function-name "$NAME"
-  aws lambda update-function-configuration --function-name "$NAME" --environment "file://$WORK/env.json" --query LastModified --output text
+  aws lambda update-function-configuration --function-name "$NAME" --handler src/lambda.handler --environment "file://$WORK/env.json" --query LastModified --output text
 else
   aws lambda create-function --function-name "$NAME" --runtime nodejs22.x --architectures arm64 \
-    --handler lambda.handler --role "$ROLE_ARN" --memory-size 1024 --timeout 30 \
+    --handler src/lambda.handler --role "$ROLE_ARN" --memory-size 1024 --timeout 30 \
     --environment "file://$WORK/env.json" --zip-file "fileb://$WORK/function.zip" --query FunctionArn --output text
 fi
 aws lambda wait function-updated --function-name "$NAME"

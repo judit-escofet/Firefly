@@ -7,8 +7,8 @@ about, checks in when the Guardian asks, and stays calm and normal-sounding duri
 ## Run it
 
 ```bash
-cd api && npm install && npm run dev     # API on http://localhost:7071 (keys: api/local.settings.json)
-cd app && npm run dev:local              # http://localhost:5173 (proxies /api to :7071)
+cd api && npm install && npm start       # API on http://localhost:4280 (keys: api/local.settings.json)
+cd app && npm run dev:local              # http://localhost:5173 (proxies /api to :4280)
 ```
 
 `api/local.settings.json` (git-ignored; copy `local.settings.example.json`) needs

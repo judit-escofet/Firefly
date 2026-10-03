@@ -18,8 +18,8 @@ startGuardian(); // once, at app boot. Idempotent.
   load takes a few seconds, and it's cached after that. Works offline once loaded (A10).
 - Backend: on load it times **WASM** (SIMD) and **WebGL** and keeps the faster one (WebGL only
   if the GPU does full 32-bit floats). Laptop: WASM ~7 ms per window, WebGL ~25 ms. Force one
-  with `?backend=wasm|webgl|cpu`. If deployed WASM fails to load, add
-  `"mimeTypes": {".wasm": "application/wasm"}` to `staticwebapp.config.json`.
+  with `?backend=wasm|webgl|cpu`. The server must send `.wasm` as `application/wasm`
+  (the AWS deployment's `api/src/lambda.js` and Vite both do).
 - The page must be served over HTTPS (or localhost) for the mic. `npm run dev` serves HTTPS.
 
 | URL flag | Effect |

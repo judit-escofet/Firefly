@@ -3,11 +3,11 @@
 //
 // Duration: read from the WAV header. WebM has no cheap header duration, so the client sends
 // X-Clip-Duration (seconds) or ?duration_s=; without it, the 2 MB cap still bounds the clip.
-const { app } = require('@azure/functions');
+const { app } = require('../../lib/router');
 const db = require('../../db');
-const { uploadClip } = require('../../lib/blob');
-const { pushToWalk } = require('../../lib/pubsub');
-const { handle, json, badRequest, notFound, requireWalkId } = require('../../lib/http');
+const { uploadClip, getClip } = require('../../lib/storage');
+const { pushToWalk } = require('../../lib/realtime');
+const { handle, json, badRequest, notFound, requireWalkId, baseUrl, HttpError } = require('../../lib/http');
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_SECONDS = 15;
@@ -65,12 +65,28 @@ app.http('clip', {
     const { rows } = await db.query('SELECT status FROM walks WHERE walk_id = $1', [walkId]);
     if (!rows[0]) throw notFound('Walk not found');
 
-    const { url, expiresOn } = await uploadClip(`${walkId}/${Date.now()}.${ext}`, buf, contentType);
+    const { url, expiresOn } = await uploadClip(walkId, ext, buf, contentType, baseUrl(request));
 
     // The newest clip becomes the one the tracking page plays.
     await db.query('UPDATE walks SET clip_url = $2 WHERE walk_id = $1', [walkId, url]);
     if (rows[0].status === 'alert') await pushToWalk(walkId, { type: 'clip', clip_url: url }, context);
 
     return json(201, { clip_url: url, expires_at: expiresOn.toISOString() });
+  }),
+});
+
+// GET /api/clips/{walk_id}/{file} — the clip link. Works for 24 hours after upload, then 410.
+app.http('clipGet', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'clips/{walk_id}/{file}',
+  handler: handle(async (request) => {
+    const walkId = requireWalkId(request);
+    const { file } = request.params;
+    if (!/^[a-f0-9]{32}\.(webm|wav)$/.test(file)) throw notFound('Clip not found');
+    const clip = await getClip(walkId, file);
+    if (!clip) throw new HttpError(410, 'link expired');
+    if (clip.redirect) return { status: 302, headers: { Location: clip.redirect, 'Cache-Control': 'no-store' } };
+    return { status: 200, body: clip.body, headers: { 'Content-Type': clip.contentType, 'Cache-Control': 'private, no-store' } };
   }),
 });

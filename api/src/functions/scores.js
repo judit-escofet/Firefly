@@ -1,5 +1,5 @@
 // POST /api/walks/{walk_id}/scores — up to 200 Guardian scream scores per call, one INSERT.
-const { app } = require('@azure/functions');
+const { app } = require('../../lib/router');
 const db = require('../../db');
 const { handle, readJson, json, badRequest, requireWalkId, isNum } = require('../../lib/http');
 

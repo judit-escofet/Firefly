@@ -3,7 +3,7 @@
   "user_id": "u_test",
   "status": "walking",
   "share_token": "Xk3v9QpL2mN7rT8wZ1yB4cDe",
-  "share_url": "https://firefly.example.net/track/Xk3v9QpL2mN7rT8wZ1yB4cDe",
+  "share_url": "https://abc123def.execute-api.us-east-1.amazonaws.com/track/Xk3v9QpL2mN7rT8wZ1yB4cDe",
   "start": { "lat": 40.7425, "lng": -74.1781 },
   "destination": { "lat": 40.739, "lng": -74.172, "label": "Home" },
   "route": {

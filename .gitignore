@@ -18,3 +18,8 @@ ml/background/
 ml/embeddings*.npz
 __pycache__/
 api/.data/
+
+# --- P3 (AWS) ---
+.aws-sam/
+api/static/
+samconfig.toml

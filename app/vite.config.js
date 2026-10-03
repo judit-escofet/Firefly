@@ -10,7 +10,8 @@ export default defineConfig({
   plugins: [react(), ...(process.env.FIREFLY_HTTP ? [] : [basicSsl()])],
   server: {
     host: true,
-    proxy: { '/api': { target: process.env.FIREFLY_API ?? 'http://localhost:7071', changeOrigin: true } },
+    // API: P3's local server (cd api && npm start) on :4280.
+    proxy: { '/api': { target: process.env.FIREFLY_API ?? 'http://localhost:4280', changeOrigin: true } },
   },
   build: {
     rollupOptions: {

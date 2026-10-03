@@ -5,8 +5,8 @@
 //   POST /api/companion/end      → {facts, saved}           (memory: up to 5 facts per walk)
 //   GET  /api/news?interests=…   → {items: [{title, source, url, published, blurb}]} (max 5)
 //   GET  /api/speech-token       → {token, expires_at, model, url} for live transcription
-// Keys live only in app settings (GEMINI_API_KEY, ELEVENLABS_API_KEY), never in the browser.
-const { app } = require('@azure/functions');
+// Keys live only in server settings (GEMINI_API_KEY, ELEVENLABS_API_KEY), never in the browser.
+const { app } = require('../../lib/router');
 const { handle, readJson, json, badRequest } = require('../../lib/http');
 const { companionTurn, classifyCheckin, extractFacts } = require('../../lib/companion');
 const { speak } = require('../../lib/eleven');

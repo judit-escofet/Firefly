@@ -1,7 +1,7 @@
 // Walk lifecycle shared by /walks, /events and /end: loading, texts, alert guard, closing.
 const db = require('../db');
 const { textAll } = require('./sms');
-const { pushToWalk } = require('./pubsub');
+const { pushToWalk } = require('./realtime');
 const { notFound } = require('./http');
 
 const ALERT_DEDUP_SECONDS = 60;

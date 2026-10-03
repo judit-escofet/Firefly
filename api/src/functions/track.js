@@ -1,11 +1,10 @@
 // Endpoints the contacts' tracking page uses. The share token is the only credential.
-//   GET /api/negotiate?token=<share_token>[&walk_id=]  -> Web PubSub URL limited to that walk's group
+//   GET /api/negotiate?token=<share_token>[&walk_id=]  -> WebSocket URL; it only receives that walk's messages
 //   GET /api/track/{share_token}                       -> walk snapshot: route, trail, last position
-//   GET /api/tiles/{z}/{x}/{y}                          -> Azure Maps tile proxy (keeps the key server-side)
-const { app } = require('@azure/functions');
+const { app } = require('../../lib/router');
 const db = require('../../db');
-const { clientUrlForWalk } = require('../../lib/pubsub');
-const { handle, json, HttpError, badRequest } = require('../../lib/http');
+const { clientUrlForWalk } = require('../../lib/realtime');
+const { handle, json, HttpError } = require('../../lib/http');
 const { loadWalkByToken, linkIsLive } = require('../../lib/walks');
 
 const expired = () => new HttpError(410, 'link expired');
@@ -25,7 +24,7 @@ app.http('negotiate', {
     const walk = await liveWalk(token);
     const walkId = request.query.get('walk_id');
     if (walkId && walkId !== walk.walk_id) throw expired();
-    const url = await clientUrlForWalk(walk.walk_id);
+    const url = clientUrlForWalk(walk.share_token);
     if (!url) throw new HttpError(503, 'Live updates are not configured');
     return json(200, { url, walk_id: walk.walk_id });
   }),
@@ -62,30 +61,13 @@ app.http('track', {
   }),
 });
 
-app.http('tiles', {
+// GET /api/health — for hosting health checks: 200 when the database answers.
+app.http('health', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'tiles/{z}/{x}/{y}',
-  handler: handle(async (request) => {
-    const [z, x, y] = ['z', 'x', 'y'].map((k) => Number.parseInt(request.params[k], 10));
-    if (![z, x, y].every(Number.isInteger) || z < 0 || z > 20 || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z) {
-      throw badRequest('Bad tile coordinates');
-    }
-    if (!process.env.AZURE_MAPS_KEY) throw new HttpError(503, 'Map tiles are not configured');
-    const url = new URL('https://atlas.microsoft.com/map/tile');
-    url.searchParams.set('api-version', '2024-04-01');
-    url.searchParams.set('tilesetId', 'microsoft.base.road');
-    url.searchParams.set('zoom', z);
-    url.searchParams.set('x', x);
-    url.searchParams.set('y', y);
-    url.searchParams.set('tileSize', '256');
-    url.searchParams.set('subscription-key', process.env.AZURE_MAPS_KEY);
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) throw new HttpError(502, 'Tile fetch failed');
-    return {
-      status: 200,
-      body: Buffer.from(await res.arrayBuffer()),
-      headers: { 'Content-Type': res.headers.get('content-type') || 'image/png', 'Cache-Control': 'public, max-age=86400' },
-    };
+  route: 'health',
+  handler: handle(async () => {
+    await db.query('SELECT 1');
+    return json(200, { ok: true });
   }),
 });

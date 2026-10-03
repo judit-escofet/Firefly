@@ -1,14 +1,14 @@
 # Firefly app (P4) — and how P1, P2, P3 plug in
 
-React + Vite + Tailwind web app (started in Lovable, "delightful-hubble"), deployed as the
-front end of the team's Azure Static Web App. It owns the screens, the walk lifecycle and the
+React + Vite + Tailwind web app (started in Lovable, "delightful-hubble"), deployed (with P3's API) as one
+AWS Lambda behind an HTTPS function URL. It owns the screens, the walk lifecycle and the
 P4 events of the team contract; the companion (P1, `src/companion/`) and the guardian (P2,
 `src/guardian/`) start once at boot (`src/main.jsx`) and talk to it only through `src/bus.js`.
 
 ## Run
 
 ```bash
-cd api && npm install && npm run dev      # P3 + P1 functions on :7071 (keys in api/local.settings.json)
+cd api && npm install && npm start        # P3 + P1 API on :4280 (keys in api/local.settings.json)
 cd app && npm install && npm run dev:local  # http://localhost:5173  (npm run dev = HTTPS for phones)
 ```
 
@@ -21,7 +21,7 @@ Tests: `npm test` (99: bus, PIN hashing, P3 contract helpers, route math, P1, P2
 | --- | --- |
 | Welcome | "Set up" or "Try the demo" (mock profile: PINs **1234** cancel / **9999** duress). With a profile: **Walk with me**. |
 | Setup (3 steps) | Name + 1–3 contacts (US numbers → `+1…`) · code phrase (≥ 3 words) with a **real "Say it once" test** (live transcription + the Guardian's matcher) · cancel + duress PIN, entered twice, must differ, **hashed in the browser** (SHA-256, user id as salt) · news chips · **home on a map** (tap, or "I'm home now"). Saved to `POST /api/profile`; kept on the phone if P3 is unreachable. |
-| Walk | Opens the shared mic **inside the tap** (iOS), gets a GPS fix, `POST /api/walks` (Azure Maps route via P3; local route if unavailable), emits `walk.started`. Map with glowing route, trail and firefly; ETA/distance; "Listening" badge from the real mic state; firefly captions from `companion.speaking`; Call 911 (`tel:911`; a demo sheet in mock mode); screen wake lock. GPS → `POST /api/walks/{id}/location` every 5 s → `position.updated`; < 30 m from home ends the walk (`arrived`). |
+| Walk | Opens the shared mic **inside the tap** (iOS), gets a GPS fix, `POST /api/walks` (Amazon Location route via P3; local route if unavailable), emits `walk.started`. Map with glowing route, trail and firefly; ETA/distance; "Listening" badge from the real mic state; firefly captions from `companion.speaking`; Call 911 (`tel:911`; a demo sheet in mock mode); screen wake lock. GPS → `POST /api/walks/{id}/location` every 5 s → `position.updated`; < 30 m from home ends the walk (`arrived`). |
 | Countdown | Shown when the Guardian emits `alert.state: countdown`; dim, no red, no alarming words, quiet chime + vibration. PIN checked locally against the hashes → `pin.entered {kind}`. Cancel and duress both show the identical "All good, enjoy your walk". If time runs out the Guardian moves to `alerted` and the walk screen shows a small note. **The app never emits `alert.state` itself.** |
 | Home | "You're home. Your contacts know you're safe." Time, distance, share card. |
 
@@ -41,9 +41,7 @@ toggle, and the live **event-bus inspector**.
 - `walk.ended.reason` is `arrived` or `stopped`; `companion.speaking` is `{on, text}`.
 - P3 field names used: `pin_hash` / `duress_pin_hash`, `start` / `destination{lat,lng,label}`,
   `/api/walks/{id}/location`, `/api/walks/{id}/end`, user ids `u_…`.
-- Map tiles: Azure Maps through P3's `/api/tiles` (key stays on the server), darkened in CSS;
-  Esri's free dark basemap when that's not configured. `public/staticwebapp.config.json`
-  keeps P3's `/track` route and adds the SPA fallback, `.wasm` MIME type and permissions.
+- Map tiles: Esri's free dark basemap (no key).
 
 ## Changes from the Lovable starter (and why)
 
@@ -58,9 +56,9 @@ toggle, and the live **event-bus inspector**.
 
 ## Deploying to AWS (hackathon account)
 
-`deploy/aws/deploy.sh` packages the built app and the API (P1 + P3 functions, unchanged) as one
-Lambda with a public HTTPS function URL (`api/lambda.js` serves `app/dist` and `/api/*` on the
-same origin, so the mic and `/api` work on phones). Keys come from `api/local.settings.json`.
-Needs AWS credentials allowed to create a Lambda, an IAM role for it and a public function URL.
-`deploy/aws/deploy.sh --teardown` removes everything. The team plan's target remains Azure
-Static Web Apps (`app/public/staticwebapp.config.json`).
+`deploy/aws/deploy.sh` packages P3's API (`api/src/lambda.js`, which also serves the tracking
+page) together with the built app (`app/dist`, bundled as `public/`) as ONE Lambda behind a public
+HTTPS function URL — the mic and same-origin `/api` work on phones. Keys come from
+`api/local.settings.json`. In the AWS Workshop account (no IAM role creation):
+`FIREFLY_ROLE=DemoToolLambdaRole ./deploy/aws/deploy.sh`. `--teardown` removes it.
+P3's `deploy-workshop.ps1` / `deploy.ps1` (SAM) deploy the API on its own.
