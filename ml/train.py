@@ -30,7 +30,7 @@ from sklearn.metrics import average_precision_score
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.preprocessing import StandardScaler
 
-from common import HARD_CATEGORIES, HOP, ROOT, count_triggers
+from common import HARD_CATEGORIES, HOP, ROOT, count_triggers, logit_scores
 
 METRICS = ROOT / "metrics.json"
 YAMNET_ONLY_THRESHOLD = 0.5
@@ -59,8 +59,8 @@ def clip_scores(window_scores, clip_of_window, clips):
     return [lookup[c] for c in clips]
 
 
-def clip_metrics(per_clip, labels, threshold):
-    pred = np.array([len(count_triggers(s, threshold)) > 0 for s in per_clip])
+def clip_metrics(per_clip, labels, threshold, k=2, n=3):
+    pred = np.array([len(count_triggers(s, threshold, k, n)) > 0 for s in per_clip])
     labels = np.asarray(labels).astype(bool)
     tp, fp, fn = int((pred & labels).sum()), int((pred & ~labels).sum()), int((~pred & labels).sum())
     precision = tp / (tp + fp) if tp + fp else 0.0
@@ -69,19 +69,32 @@ def clip_metrics(per_clip, labels, threshold):
     return {"precision": round(precision, 4), "recall": round(recall, 4), "f1": round(f1, 4), "tp": tp, "fp": fp, "fn": fn}
 
 
-def stream_fa(per_clip, clips, clip_cat, threshold, hard):
+def stream_fa(per_clip, clips, clip_cat, threshold, hard, k=2, n=3, hop_s=HOP / 16000):
     """False alarms per hour when the given negative clips are played back to back."""
     sel = [s for c, s in zip(clips, per_clip) if (str(clip_cat[c]) in HARD_CATEGORIES) == hard]
     if not sel:
         return None, 0.0
     stream = np.concatenate(sel)
-    hours = len(stream) * HOP / 16000 / 3600
-    return len(count_triggers(stream, threshold)) / hours, hours
+    hours = len(stream) * hop_s / 3600
+    return len(count_triggers(stream, threshold, k, n)) / hours, hours
 
 
-def second_best_peak(s):
-    """Clip score under the 2-of-3 rule: detected at threshold t iff this ≥ t."""
-    return np.sort(np.lib.stride_tricks.sliding_window_view(np.pad(s, (0, 2)), 3), axis=1)[:, -2].max()
+def kth_peak(s, k=2, n=3):
+    """Clip score under the k-of-n rule: the clip is detected at threshold t iff this ≥ t."""
+    return np.sort(np.lib.stride_tricks.sliding_window_view(np.pad(s, (0, n - 1)), n), axis=1)[:, -k].max()
+
+
+def interleave(a, b):
+    n = min(len(a), len(b))
+    out = np.empty(2 * n, dtype=np.float64)
+    out[0::2], out[1::2] = a[:n], b[:n]
+    return out
+
+
+def features(D, kind):
+    if kind == "embedding":
+        return D["X"]
+    return np.hstack([D["X"], logit_scores(D["S"]).astype(np.float32)])
 
 
 def main():
@@ -90,90 +103,135 @@ def main():
     ap.add_argument("--out", default=str(ROOT.parent / "app/public/models/scream_head.json"))
     ap.add_argument("--seed", type=int, default=SEED)
     ap.add_argument("--fa-budget", type=float, default=1.0, help="max false alarms/hour on validation walk-like audio")
+    ap.add_argument("--embeddings-offset", default=None,
+                    help="same clips embedded with --offset 3840 (enables --hop 0.24 and doubles training windows)")
+    ap.add_argument("--features", choices=["embedding", "embedding+logit_scores"], default="embedding")
+    ap.add_argument("--augment", action="store_true", help="also train on the noisy copies (embed.py --augment)")
+    ap.add_argument("--hop", type=float, choices=[0.48, 0.24], default=0.48)
+    ap.add_argument("--rule", default="2/3", help="k/n: trigger when k of the last n windows reach the threshold")
     args = ap.parse_args()
+    rule_k, rule_n = map(int, args.rule.split("/"))
+    if args.hop == 0.24 and not args.embeddings_offset:
+        raise SystemExit("--hop 0.24 needs --embeddings-offset")
 
     d = np.load(args.embeddings)
-    X, clip, yam, rms = d["X"], d["clip"], d["yamnet_score"], d["rms"]
+    phases = [d] + ([np.load(args.embeddings_offset)] if args.embeddings_offset else [])
+    for p in phases[1:]:
+        assert (p["clip_path"] == d["clip_path"]).all(), "offset embeddings must come from the same clip list"
     clip_label, clip_group, clip_cat = d["clip_label"], d["clip_group"], d["clip_category"]
-    print(f"{len(clip_label)} clips ({clip_label.sum()} positive), {len(X)} windows, {len(set(clip_group))} groups")
+    aug_of = d["clip_aug_of"] if "clip_aug_of" in d.files else np.full(len(clip_label), -1)
+    orig = np.flatnonzero(aug_of < 0)
+    print(f"{len(orig)} clips ({clip_label[orig].sum()} positive), {(aug_of >= 0).sum()} noisy copies, "
+          f"{len(set(clip_group[orig]))} groups, {len(phases)} window phase(s)")
 
-    train_c, val_c, test_c, used_seed = split_clips(clip_label, clip_group, args.seed)
+    o_tr, o_va, o_te, used_seed = split_clips(clip_label[orig], clip_group[orig], args.seed)
+    train_c, val_c, test_c = orig[o_tr], orig[o_va], orig[o_te]
     for a, b in ((train_c, test_c), (val_c, test_c), (train_c, val_c)):
         assert not (set(clip_group[a]) & set(clip_group[b])), "group leak between splits"
+    train_aug = np.array([c for c in np.flatnonzero(aug_of >= 0) if aug_of[c] in set(train_c)], dtype=int)
+    train_all = np.concatenate([train_c, train_aug]) if args.augment else train_c
 
-    clip_max_rms = np.zeros(len(clip_label), np.float32)
-    np.maximum.at(clip_max_rms, clip, rms)
-    use = (clip_label[clip] == 0) | (rms >= 0.4 * clip_max_rms[clip])
-    tr_mask = np.isin(clip, train_c) & use
-    Xtr, ytr = X[tr_mask], clip_label[clip[tr_mask]]
-    print(f"train windows: {ytr.sum()} positive (loud), {(ytr == 0).sum()} negative")
+    # Training windows (all phases): every negative window; for positives only the windows that
+    # are loud in the ORIGINAL clip (noisy copies reuse their source's loud windows).
+    Xs, ys = [], []
+    for D in phases:
+        clip, rms, win = D["clip"], D["rms"], D["window"]
+        mx = np.zeros(len(clip_label), np.float32)
+        np.maximum.at(mx, clip, rms)
+        src = np.where(aug_of[clip] >= 0, aug_of[clip], clip).astype(np.int64)
+        orig_loud = (aug_of[clip] < 0) & (rms >= 0.4 * mx[clip])
+        loud_keys = set((clip[orig_loud].astype(np.int64) * 100000 + win[orig_loud]).tolist())
+        loud = np.fromiter(((k in loud_keys) for k in (src * 100000 + win).tolist()), bool, len(clip))
+        m = np.isin(clip, train_all) & ((clip_label[clip] == 0) | loud)
+        Xs.append(features(D, args.features)[m])
+        ys.append(clip_label[clip[m]])
+    Xtr, ytr = np.vstack(Xs), np.concatenate(ys)
+    print(f"train windows: {ytr.sum()} positive, {(ytr == 0).sum()} negative ({args.features}, augment={args.augment})")
     scaler = StandardScaler().fit(Xtr)
     Xtr_s = scaler.transform(Xtr)
 
-    val_win = np.isin(clip, val_c)
+    def window_scores(model_p, clips):
+        """Fused score per window for `clips` → dict clip → window series at the chosen hop."""
+        per_phase = []
+        for D in phases[: 2 if args.hop == 0.24 else 1]:
+            m = np.isin(D["clip"], clips)
+            p = model_p(features(D, args.features)[m])
+            fused = np.sqrt(p * D["yamnet_score"][m])
+            per_phase.append(dict(zip(clips, clip_scores(fused, D["clip"][m], clips))))
+        if args.hop == 0.24:
+            return {c: interleave(per_phase[0][c], per_phase[1][c]) for c in clips}
+        return per_phase[0]
+
     best = None
     for C in (0.003, 0.01, 0.03, 0.1):
-        m = LogisticRegression(C=C, class_weight="balanced", max_iter=3000).fit(Xtr_s, ytr)
-        p = m.predict_proba(scaler.transform(X[val_win]))[:, 1]
-        fused = np.sqrt(p * yam[val_win])
-        per_clip = clip_scores(fused, clip[val_win], val_c)
-        ap_val = average_precision_score(clip_label[val_c], [second_best_peak(s) for s in per_clip])
+        m = LogisticRegression(C=C, class_weight="balanced", max_iter=4000).fit(Xtr_s, ytr)
+        ws = window_scores(lambda F: m.predict_proba(scaler.transform(F))[:, 1], val_c)
+        per_clip = [ws[c] for c in val_c]
+        ap_val = average_precision_score(clip_label[val_c], [kth_peak(s, rule_k, rule_n) for s in per_clip])
         print(f"  C={C:<6} val clip AP (fused) {ap_val:.4f}")
         if best is None or ap_val > best[0]:
             best = (ap_val, C, m, per_clip)
     _, C, model, val_per_clip = best
 
+    R = (rule_k, rule_n)
     # Threshold under a false-alarm budget on validation walk-like negatives.
     val_neg = [c for c in val_c if clip_label[c] == 0]
     val_neg_scores = [s for c, s in zip(val_c, val_per_clip) if clip_label[c] == 0]
     grid = np.round(np.arange(0.02, 0.99, 0.005), 3)
     curve = []
     for t in grid:
-        mt = clip_metrics(val_per_clip, clip_label[val_c], t)
-        fa_walk, walk_h = stream_fa(val_neg_scores, val_neg, clip_cat, t, hard=False)
+        mt = clip_metrics(val_per_clip, clip_label[val_c], t, *R)
+        fa_walk, walk_h = stream_fa(val_neg_scores, val_neg, clip_cat, t, False, *R, args.hop)
         curve.append((float(t), mt["recall"], fa_walk))
     ok = [c for c in curve if c[2] <= args.fa_budget]
     threshold = min(ok, key=lambda c: (-c[1], c[0]))[0] if ok else max(grid)
-    val_at = clip_metrics(val_per_clip, clip_label[val_c], threshold)
-    val_fa_walk, val_walk_h = stream_fa(val_neg_scores, val_neg, clip_cat, threshold, hard=False)
-    val_fa_hard, val_hard_h = stream_fa(val_neg_scores, val_neg, clip_cat, threshold, hard=True)
+    val_at = clip_metrics(val_per_clip, clip_label[val_c], threshold, *R)
+    val_fa_walk, val_walk_h = stream_fa(val_neg_scores, val_neg, clip_cat, threshold, False, *R, args.hop)
+    val_fa_hard, val_hard_h = stream_fa(val_neg_scores, val_neg, clip_cat, threshold, True, *R, args.hop)
     print(f"chosen C={C}, threshold {threshold:.3f} → val {val_at}, FA walk-like {val_fa_walk:.2f}/h ({val_walk_h:.2f} h), hard {val_fa_hard:.1f}/h")
 
     w = model.coef_[0] / scaler.scale_
     b = float(model.intercept_[0] - np.sum(model.coef_[0] * scaler.mean_ / scaler.scale_))
 
     # Test, touched once.
-    test_win = np.isin(clip, test_c)
-    p_test = 1 / (1 + np.exp(-(X[test_win] @ w + b)))
-    test_per_clip = clip_scores(np.sqrt(p_test * yam[test_win]), clip[test_win], test_c)
-    test = clip_metrics(test_per_clip, clip_label[test_c], threshold)
-    yam_per_clip = clip_scores(yam[test_win], clip[test_win], test_c)
+    tws = window_scores(lambda F: 1 / (1 + np.exp(-(F.astype(np.float64) @ w + b))), test_c)
+    test_per_clip = [tws[c] for c in test_c]
+    test = clip_metrics(test_per_clip, clip_label[test_c], threshold, *R)
+    # Baseline = spec stage A exactly: YAMNet-only, 0.48 s hop, 2 of 3, threshold 0.5.
+    tw = np.isin(d["clip"], test_c)
+    yam_per_clip = clip_scores(d["yamnet_score"][tw], d["clip"][tw], test_c)
     base = clip_metrics(yam_per_clip, clip_label[test_c], YAMNET_ONLY_THRESHOLD)
     test_neg = [c for c in test_c if clip_label[c] == 0]
     tn_scores = [s for c, s in zip(test_c, test_per_clip) if clip_label[c] == 0]
     tn_yam = [s for c, s in zip(test_c, yam_per_clip) if clip_label[c] == 0]
     test_fa = {
-        "classifier_walk_like_per_hour": round(stream_fa(tn_scores, test_neg, clip_cat, threshold, False)[0], 2),
-        "classifier_hard_per_hour": round(stream_fa(tn_scores, test_neg, clip_cat, threshold, True)[0], 2),
+        "classifier_walk_like_per_hour": round(stream_fa(tn_scores, test_neg, clip_cat, threshold, False, *R, args.hop)[0], 2),
+        "classifier_hard_per_hour": round(stream_fa(tn_scores, test_neg, clip_cat, threshold, True, *R, args.hop)[0], 2),
         "yamnet_only_walk_like_per_hour": round(stream_fa(tn_yam, test_neg, clip_cat, YAMNET_ONLY_THRESHOLD, False)[0], 2),
         "yamnet_only_hard_per_hour": round(stream_fa(tn_yam, test_neg, clip_cat, YAMNET_ONLY_THRESHOLD, True)[0], 2),
-        "walk_like_hours": round(stream_fa(tn_scores, test_neg, clip_cat, threshold, False)[1], 3),
-        "hard_hours": round(stream_fa(tn_scores, test_neg, clip_cat, threshold, True)[1], 3),
+        "walk_like_hours": round(stream_fa(tn_scores, test_neg, clip_cat, threshold, False, *R, args.hop)[1], 3),
+        "hard_hours": round(stream_fa(tn_scores, test_neg, clip_cat, threshold, True, *R, args.hop)[1], 3),
     }
     print(f"TEST fused @ {threshold:.3f}: {test}")
     print(f"TEST yamnet-only @ {YAMNET_ONLY_THRESHOLD}: {base}")
     print(f"TEST negatives as a stream: {test_fa}")
 
-    fp_cats = Counter(str(clip_cat[c]) for c, s in zip(test_c, test_per_clip) if clip_label[c] == 0 and count_triggers(s, threshold))
-    missed = [str(d["clip_path"][c]) for c, s in zip(test_c, test_per_clip) if clip_label[c] == 1 and not count_triggers(s, threshold)]
+    fp_cats = Counter(str(clip_cat[c]) for c, s in zip(test_c, test_per_clip) if clip_label[c] == 0 and count_triggers(s, threshold, *R))
+    missed = [str(d["clip_path"][c]) for c, s in zip(test_c, test_per_clip) if clip_label[c] == 1 and not count_triggers(s, threshold, *R)]
 
+    hop_samples = int(round(args.hop * 16000))
     head = {
-        "model": "yamnet-embeddings + logistic regression, fused with yamnet scream score",
+        "model": f"yamnet {args.features} + logistic regression, fused with yamnet scream score",
+        "features": args.features,
         "fusion": FUSION,
         "weights": [round(float(v), 7) for v in w],
         "bias": round(b, 7),
         "threshold": threshold,
-        "rule": "2 of last 3 windows >= threshold; score = sqrt(sigmoid(w·e+b) * max(Screaming, Shout, Yell))",
+        "hop_samples": hop_samples,
+        "rule_k": rule_k,
+        "rule_n": rule_n,
+        "rule": f"{rule_k} of last {rule_n} windows (hop {args.hop} s) >= threshold; score = sqrt(sigmoid(w·x+b) * max(Screaming, Shout, Yell))",
+        "augmented_training": bool(args.augment),
         "trained": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "C": C,
     }
@@ -199,12 +257,16 @@ def main():
         "false_alarms_per_hour": None,
     }
     metrics["details"] = {
-        "evaluation": "per clip; a clip is detected if 2 of 3 consecutive windows >= threshold anywhere in it",
+        "evaluation": f"per clip; a clip is detected if {rule_k} of {rule_n} consecutive windows (hop {args.hop} s) >= threshold anywhere in it",
+        "features": args.features,
+        "hop_s": args.hop,
+        "augmented_training": bool(args.augment),
         "split": "GroupShuffleSplit by uploader/source recording: 64% train / 16% val / 20% test",
         "split_seed": used_seed,
         "threshold_rule": f"best validation recall with <= {args.fa_budget} false alarms/hour on validation walk-like negatives",
         "C": C,
-        "train_clips": {"positives": int(clip_label[train_c].sum()), "negatives": int((clip_label[train_c] == 0).sum())},
+        "train_clips": {"positives": int(clip_label[train_c].sum()), "negatives": int((clip_label[train_c] == 0).sum()),
+                        "noisy_copies": int(len(train_aug)) if args.augment else 0},
         "val_clips": {"positives": int(clip_label[val_c].sum()), "negatives": int((clip_label[val_c] == 0).sum())},
         "val_at_threshold": {**val_at, "fa_walk_like_per_hour": round(val_fa_walk, 2), "fa_hard_per_hour": round(val_fa_hard, 2)},
         "val_tradeoff_curve": [

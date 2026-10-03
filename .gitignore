@@ -15,5 +15,5 @@ ml/data/positive/fsd50k/
 ml/data/negative/fsd50k/
 ml/data/negative/esc50/
 ml/background/
-ml/embeddings.npz
+ml/embeddings*.npz
 __pycache__/

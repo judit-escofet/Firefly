@@ -14,6 +14,7 @@ import { createCodePhraseSpotter, loadCodePhrase } from './codePhrase.js';
 import { createCheckinTriggers } from './checkins.js';
 import { createScoreLog } from './scoreLog.js';
 import { createClipBuffer, encodeWav } from './audio/clipBuffer.js';
+import { beginMicSession } from './audio/micSession.js';
 
 let instance = null;
 
@@ -70,20 +71,27 @@ export function startGuardian({
   async function startMic() {
     if (!mic || detector || detectorStarting) return;
     status.mode = 'loading';
-    const { startScreamDetector } = await import('./audio/detector.js'); // lazy: keeps TF.js out of the initial bundle
-    detectorStarting = startScreamDetector({
-      onAudio: pushAudio,
-      onScore: (s) => {
-        status.lastScore = s.score;
-        status.lastMs = s.ms;
-        scoreLog.add({ ts: s.ts, scream_score: s.score, triggered: s.triggered });
-        bus.emit('guardian.score', s); // debug-only event (overlay, test page); not part of the contract
-      },
-      onTrigger: ({ confidence, detail }) => bus.emit('danger.signal', { source: 'scream', confidence, detail }),
-    })
+    // Synchronously, still inside the "Walk with me" tap: iOS only starts audio from a gesture.
+    const session = beginMicSession();
+    detectorStarting = import('./audio/detector.js') // lazy: keeps TF.js out of the initial bundle
+      .then(({ startScreamDetector }) =>
+        startScreamDetector({
+          session,
+          onStatus: (t) => (status.loading = t),
+          onAudio: pushAudio,
+          onScore: (s) => {
+            status.lastScore = s.score;
+            status.lastMs = s.ms;
+            scoreLog.add({ ts: s.ts, scream_score: s.score, triggered: s.triggered });
+            bus.emit('guardian.score', s); // debug-only event (overlay, test page); not part of the contract
+          },
+          onTrigger: ({ confidence, detail }) => bus.emit('danger.signal', { source: 'scream', confidence, detail }),
+        }),
+      )
       .then((d) => {
         detector = d;
-        Object.assign(status, { mode: d.mode, backend: d.backend, stats: d.stats, threshold: d.rule.threshold, error: null });
+        Object.assign(status, { mode: d.mode, backend: d.backend, backendNote: d.backendNote, stats: d.stats, threshold: d.rule.threshold, error: null });
+        if (d.contextState !== 'running') console.warn(`[guardian] audio context is ${d.contextState}: emit walk.started from inside the tap handler`);
       })
       .catch((err) => {
         status.mode = 'error';

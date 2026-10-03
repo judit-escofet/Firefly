@@ -46,7 +46,7 @@ export async function embedClip(infer, samples, sampleRate, head = null) {
     const y = yamnetOnlyScore(classScores);
     out.embeddings.push(Array.from(embedding));
     out.yamnetScores.push(y);
-    out.headScores.push(head ? headScore(head, embedding, y) : null);
+    out.headScores.push(head ? headScore(head, embedding, y, classScores) : null);
   }
   return out;
 }

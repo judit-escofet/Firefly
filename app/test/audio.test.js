@@ -38,6 +38,12 @@ describe('resampler', () => {
     for (let i = 0; i < whole.length; i++) expect(parts[i]).toBeCloseTo(whole[i], 6);
   });
 
+  it.each([24000, 22050, 44100, 32000])('Bluetooth/odd mic rate %i Hz → 16 kHz keeps a 1 kHz tone', (rate) => {
+    const out = resample(sine(1000, rate, 1), rate);
+    expect(Math.abs(out.length - 16000)).toBeLessThan(12);
+    expect(rms(out.slice(300, 15000))).toBeCloseTo(Math.SQRT1_2, 1);
+  });
+
   it('16 kHz input passes through unchanged', () => {
     const x = sine(440, 16000, 0.1);
     expect(Array.from(resample(x, 16000))).toEqual(Array.from(x));
@@ -55,6 +61,13 @@ describe('windowing', () => {
       expect(win.length).toBe(WINDOW_SAMPLES);
       expect(win[0]).toBe(i * HOP_SAMPLES);
     });
+  });
+
+  it('supports a smaller hop (e.g. 0.24 s) when the head asks for one', () => {
+    const wins = [];
+    const w = createWindower((x) => wins.push(x[0]), 3840);
+    w.push(Float32Array.from({ length: 16000 * 2 }, (_, i) => i));
+    expect(wins).toEqual([0, 3840, 7680, 11520, 15360]);
   });
 
   it('pads a short clip to one window', () => {
@@ -84,6 +97,19 @@ describe('scoring + trigger rule', () => {
     const head = validateHead({ weights: new Array(1024).fill(0), bias: 0, threshold: 0.3, fusion: 'geomean_yamnet' });
     expect(headScore(head, new Array(1024).fill(1), 0.32)).toBeCloseTo(Math.sqrt(0.5 * 0.32), 9);
     expect(() => validateHead({ ...head, fusion: 'mystery' })).toThrow();
+  });
+
+  it('class-score features add w·logit(scores), clipped to [1e-4, 1-1e-4]', () => {
+    const weights = new Array(1545).fill(0);
+    weights[1024 + 11] = 1; // Screaming log-odds
+    weights[1024 + 0] = -1; // Speech log-odds
+    const head = validateHead({ weights, bias: 0, threshold: 0.5, features: 'embedding+logit_scores' });
+    const cs = new Array(521).fill(0);
+    cs[11] = 0.75;
+    cs[0] = 0; // clipped to 1e-4
+    const z = Math.log(0.75 / 0.25) - Math.log(1e-4 / (1 - 1e-4));
+    expect(headScore(head, new Array(1024).fill(0), 0, cs)).toBeCloseTo(1 / (1 + Math.exp(-z)), 9);
+    expect(() => validateHead({ ...head, weights: new Array(1024).fill(0) })).toThrow();
   });
 
   it('triggers on 2 of the last 3 windows ≥ threshold, then clears', () => {

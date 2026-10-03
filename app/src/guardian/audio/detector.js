@@ -4,8 +4,9 @@
 
 import workletUrl from './capture-worklet.js?url';
 import { createResampler } from './resampler.js';
-import { createWindower, createTriggerRule, yamnetOnlyScore, headScore, validateHead } from './windows.js';
-import { loadYamnet } from './yamnet.js';
+import { createWindower, createTriggerRule, yamnetOnlyScore, headScore, validateHead, HOP_SAMPLES } from './windows.js';
+import { loadYamnetFastest } from './backend.js';
+import { beginMicSession } from './micSession.js';
 
 export const HEAD_URL = '/models/scream_head.json';
 export const YAMNET_ONLY_THRESHOLD = 0.5;
@@ -31,19 +32,33 @@ function thresholdOverride() {
   return Number.isFinite(v) ? v : null;
 }
 
+// session: from beginMicSession(), created synchronously in the user's tap (required on iOS).
 // onScore({ts, score, yamnetScore, triggered, ms}); onTrigger({confidence, detail}); onAudio(Float32Array 16k)
-export async function startScreamDetector({ stream, onScore, onTrigger, onAudio, useHead = true, headUrl, yamnetUrl } = {}) {
-  const [yamnet, head] = await Promise.all([loadYamnet({ url: yamnetUrl }), useHead ? loadHead(headUrl) : null]);
+export async function startScreamDetector({ session, onScore, onTrigger, onAudio, useHead = true, headUrl, yamnetUrl, onStatus } = {}) {
+  session ??= beginMicSession(); // fine on desktop; on iOS pass one opened inside the tap
+  const { ctx } = session;
+  if (!ctx) await session.stream; // throws the reason (no HTTPS / no Web Audio)
+  let yamnet, head, stream;
+  try {
+    onStatus?.('loading model + waiting for microphone permission');
+    [yamnet, head, stream] = await Promise.all([
+      loadYamnetFastest({ url: yamnetUrl, onStatus }),
+      useHead ? loadHead(headUrl) : null,
+      session.stream,
+    ]);
+  } catch (err) {
+    if (err?.name === 'NotAllowedError') err = new Error('microphone permission denied: allow the mic for this site, then reload');
+    await ctx.close().catch(() => {});
+    session.stream.then((s) => s.getTracks().forEach((t) => t.stop())).catch(() => {});
+    throw err;
+  }
   const threshold = thresholdOverride() ?? head?.threshold ?? YAMNET_ONLY_THRESHOLD;
-  const rule = createTriggerRule({ threshold, k: 2, n: 3 });
+  const k = head?.rule_k ?? 2;
+  const n = head?.rule_n ?? 3;
+  const hop = head?.hop_samples ?? HOP_SAMPLES;
+  const rule = createTriggerRule({ threshold, k, n });
   const recent = [];
 
-  const ownStream = !stream;
-  stream ??= await navigator.mediaDevices.getUserMedia({
-    // Raw-ish audio: noise suppression / AGC would flatten exactly the screams we want to hear.
-    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
-  });
-  const ctx = new AudioContext();
   await ctx.audioWorklet.addModule(workletUrl);
   if (ctx.state === 'suspended') await ctx.resume().catch(() => {});
   const source = ctx.createMediaStreamSource(stream);
@@ -67,14 +82,14 @@ export async function startScreamDetector({ stream, onScore, onTrigger, onAudio,
     try {
       const { classScores, embedding, ms } = await yamnet.infer(window);
       const yScore = yamnetOnlyScore(classScores);
-      const score = head ? headScore(head, embedding, yScore) : yScore;
+      const score = head ? headScore(head, embedding, yScore, classScores) : yScore;
       const r = rule.push(score);
       stats.windows++;
       stats.lastMs = ms;
       stats.msMax = Math.max(stats.msMax, ms);
       stats.msAvg += (ms - stats.msAvg) / Math.min(stats.windows, 50);
       recent.push(score >= rule.threshold);
-      if (recent.length > 4) recent.shift();
+      if (recent.length > n + 1) recent.shift();
       onScore?.({ ts: new Date().toISOString(), score, yamnetScore: yScore, triggered: r.triggered, ms, classScores });
       if (r.triggered) {
         onTrigger?.({
@@ -94,7 +109,7 @@ export async function startScreamDetector({ stream, onScore, onTrigger, onAudio,
     }
   }
 
-  const windower = createWindower(run);
+  const windower = createWindower(run, hop);
   node.port.onmessage = ({ data }) => {
     const x16 = resampler.push(data);
     onAudio?.(x16);
@@ -104,8 +119,14 @@ export async function startScreamDetector({ stream, onScore, onTrigger, onAudio,
   return {
     mode: head ? 'classifier' : 'yamnet-only',
     backend: yamnet.backend,
+    backendNote: yamnet.backendNote,
+    audioTime: () => ctx.currentTime, // seconds on the AudioContext clock (for latency tests)
+    get contextState() {
+      return ctx.state; // 'suspended' on iOS if the session wasn't opened inside a tap
+    },
     nativeRate: ctx.sampleRate,
     rule,
+    hopSeconds: hop / 16000,
     stats,
     numTensors: yamnet.numTensors,
     async stop() {
@@ -113,7 +134,7 @@ export async function startScreamDetector({ stream, onScore, onTrigger, onAudio,
       source.disconnect();
       node.disconnect();
       await ctx.close().catch(() => {});
-      if (ownStream) stream.getTracks().forEach((t) => t.stop());
+      stream.getTracks().forEach((t) => t.stop());
     },
   };
 }

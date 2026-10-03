@@ -1,7 +1,8 @@
 // guardian-test.html: live mic → YAMNet scores, trigger rule, timing (G1), parity check.
 
 import { startScreamDetector } from './audio/detector.js';
-import { loadYamnet } from './audio/yamnet.js';
+import { loadYamnetFastest } from './audio/backend.js';
+import { beginMicSession, beginFileSession } from './audio/micSession.js';
 import { parseWav, embedClip, compareEmbeddings, maxAbsDiff } from './audio/parity.js';
 import { loadHead } from './audio/detector.js';
 
@@ -16,26 +17,54 @@ const history = [];
 fetch('/models/yamnet/yamnet_class_map.csv')
   .then((r) => r.text())
   .then((t) => {
-    labels = t.trim().split('\n').slice(1).map((l) => l.split(',').slice(2).join(',').replace(/"/g, ''));
+    labels = t.trim().split(/\r?\n/).slice(1).map((l) => l.split(',').slice(2).join(',').replace(/"/g, ''));
   });
 
-$('start').onclick = async () => {
+let fileRun = null; // {startedAt, onset} while the test scream plays
+
+$('start').onclick = () => start(beginMicSession()); // session opened inside the tap (iOS)
+
+$('playScream').onclick = async () => {
+  const session = beginFileSession('/parity/scream_test.wav'); // inside the tap, before any await
+  const meta = await fetch('/parity/scream_test.json').then((r) => r.json());
+  await start(session);
+  if (!det) return;
+  const { startedAt, duration } = await session.start();
+  fileRun = { startedAt, onset: meta.onset_s, triggeredAt: null };
+  $('log').textContent = `${new Date().toLocaleTimeString()}  playing test scream (onset at ${meta.onset_s} s): ${meta.scream}\n` + $('log').textContent;
+  setTimeout(() => {
+    if (fileRun && fileRun.triggeredAt === null) {
+      $('log').textContent = `${new Date().toLocaleTimeString()}  ✗ test scream NOT detected\n` + $('log').textContent;
+    }
+    fileRun = null;
+  }, (duration + 1) * 1000);
+};
+
+async function start(session) {
+  if (det) await det.stop();
+  det = null;
   $('start').disabled = true;
   $('status').textContent = 'loading YAMNet + mic…';
   try {
-    det = await startScreamDetector({ useHead: $('useHead').checked, onScore, onTrigger });
+    det = await startScreamDetector({
+      session,
+      useHead: $('useHead').checked,
+      onScore,
+      onTrigger,
+      onStatus: (t) => ($('status').textContent = t),
+    });
     startedAt = performance.now();
     firstMinute = [];
     lastMinute = [];
     $('thr').value = det.rule.threshold;
     $('thrVal').textContent = det.rule.threshold.toFixed(2);
-    $('status').textContent = `listening · ${det.mode} · threshold ${det.rule.threshold.toFixed(2)}`;
+    $('status').textContent = `listening · ${det.mode} · threshold ${det.rule.threshold.toFixed(2)} · audio ${det.contextState}\nbackends: ${det.backendNote}`;
     $('stop').disabled = false;
   } catch (err) {
     $('status').textContent = `error: ${err.message}`;
     $('start').disabled = false;
   }
-};
+}
 
 $('stop').onclick = async () => {
   await det?.stop();
@@ -73,7 +102,7 @@ function onScore(s) {
   const avg = (a) => a.reduce((x, y) => x + y, 0) / (a.length || 1);
   $('drift').textContent = `${avg(firstMinute).toFixed(0)} → ${avg(lastMinute.map((x) => x.ms)).toFixed(0)} ms`;
   $('win').textContent = `${st.windows} / ${st.dropped}`;
-  $('be').textContent = `${det.backend} · ${det.nativeRate} Hz · ${det.numTensors()}`;
+  $('be').textContent = `${det.backend} · ${det.nativeRate} Hz · ${det.numTensors()} · audio ${det.contextState}`;
   $('uptime').textContent = `${Math.floor(t / 60)}m ${Math.floor(t % 60)}s`;
   if (labels.length) {
     const top = Array.from(s.classScores, (v, i) => [v, i]).sort((a, b) => b[0] - a[0]).slice(0, 3);
@@ -83,7 +112,12 @@ function onScore(s) {
 }
 
 function onTrigger({ confidence, detail }) {
-  const line = `${new Date().toLocaleTimeString()}  TRIGGER  conf ${confidence}  ${detail}`;
+  let latency = '';
+  if (fileRun && fileRun.triggeredAt === null) {
+    fileRun.triggeredAt = det.audioTime() - fileRun.startedAt;
+    latency = `  ✓ ${(fileRun.triggeredAt - fileRun.onset).toFixed(2)} s after scream onset (G6 target < 2 s)`;
+  }
+  const line = `${new Date().toLocaleTimeString()}  TRIGGER  conf ${confidence}  ${detail}${latency}`;
   $('log').textContent = line + '\n' + $('log').textContent;
   $('trigger').textContent = '🚨 would start countdown';
   navigator.vibrate?.(200);
@@ -117,7 +151,7 @@ $('parity').onclick = async () => {
     if (!wavRes.ok || !pyRes.ok) throw new Error('missing public/parity files: run `python ml/parity.py` first');
     const { samples, sampleRate } = parseWav(await wavRes.arrayBuffer());
     const py = await pyRes.json();
-    const [yamnet, head] = await Promise.all([loadYamnet(), loadHead()]);
+    const [yamnet, head] = await Promise.all([loadYamnetFastest(), loadHead()]);
     const js = await embedClip(yamnet.infer, samples, sampleRate, head);
     const r = compareEmbeddings(js.embeddings, py.embeddings);
     const dHead = maxAbsDiff(js.headScores, py.head_scores);

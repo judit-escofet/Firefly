@@ -93,10 +93,19 @@ HARD_CATEGORIES = {
 }
 
 
-def head_score(head, emb, yam=None):
+def logit_scores(scores):
+    """Class-score features: log-odds of all 521 YAMNet scores, clipped to [1e-4, 1 − 1e-4]."""
+    p = np.clip(np.asarray(scores, dtype=np.float64), 1e-4, 1 - 1e-4)
+    return np.log(p / (1 - p))
+
+
+def head_score(head, emb, yam=None, scores=None):
     """Same as headScore() in app/src/guardian/audio/windows.js.
-    fusion "geomean_yamnet": sqrt(sigmoid(w·e + b) × YAMNet scream score)."""
-    z = emb @ np.asarray(head["weights"], dtype=np.float64) + head["bias"]
+    features "embedding+logit_scores": w has 1024 + 521 entries (embedding, then class log-odds).
+    fusion "geomean_yamnet": sqrt(sigmoid(w·x + b) × YAMNet scream score)."""
+    w = np.asarray(head["weights"], dtype=np.float64)
+    x = emb if head.get("features", "embedding") == "embedding" else np.hstack([emb, logit_scores(scores)])
+    z = x @ w + head["bias"]
     p = 1 / (1 + np.exp(-z))
     if head.get("fusion") == "geomean_yamnet":
         if yam is None:

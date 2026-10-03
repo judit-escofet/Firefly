@@ -6,9 +6,9 @@ Trains the scream classifier that runs in the phone browser, and measures it hon
 YAMNet (frozen, 1024-d embedding per 0.96 s window)  →  logistic regression  →  scream_head.json
 ```
 
-The browser computes `sqrt(sigmoid(w · embedding + b) × YAMNet scream score)` per window (see
-"Results" for why the fusion) and starts the countdown when **2 of the last 3 windows** reach
-the threshold. Python uses the same resampler
+The browser computes `sqrt(sigmoid(w · embedding + b) × YAMNet scream score)` every 0.24 s and
+starts the countdown when **2 of the last 3 windows** reach the threshold (see "Results" for
+why the fusion and the 0.24 s hop; both are recorded in `scream_head.json`). Python uses the same resampler
 (`resample.py` ⇄ `app/src/guardian/audio/resampler.js`), the same 15600-sample / 7680-hop
 framing, and the same trigger rule, so the numbers in `metrics.json` describe what runs on the phone.
 
@@ -66,35 +66,52 @@ and the timestamp of every background false alarm so you can listen back).
 Test set: 59 scream clips + 908 negative clips, held out by uploader. Background: 5.38 h never
 used in training (4.21 h everyday sounds + 1.17 h crowds/cheering/laughter/playful screams).
 
-| | Fused classifier (thr 0.33) | YAMNet-only (thr 0.5) | Target |
-| --- | --- | --- | --- |
-| Recall (test clips) | **0.59** | 0.29 | ≥ 0.85 (G3) ❌ |
-| Precision (test clips) | 0.63 | 0.85 | |
-| False alarms / h, all background | **6.1** | 0.37 | ≤ 1 (G4) ❌ |
-| … everyday sounds only | 3.6 | 0.48 | |
-| … crowds / cheering / playful screams | 15.3 | 0.0 | |
+| | **Current model** | Previous (0.48 s hop) | YAMNet-only (spec stage A) | Target |
+| --- | --- | --- | --- | --- |
+| Recall (test clips) | **0.71** | 0.59 | 0.29 | ≥ 0.85 (G3) ❌ |
+| Precision (test clips) | 0.58 | 0.63 | 0.85 | |
+| False alarms / h, all background | 10.4 | 6.1 | 0.37 | ≤ 1 (G4) ❌ |
+| … everyday sounds | 6.4 | 3.6 | 0.48 | |
+| … crowds / cheering / playful screams | 24.7 | 15.3 | 0.0 | |
+| Scream → trigger (test scream, 8 window alignments) | **1.8–1.9 s, 8/8 caught** | 1.9–5 s, 6/8 caught | | < 2 s (G6) |
 
-What we learned (all decisions made on the validation split, never on test or background):
+Current model = `scream_head.json`: YAMNet embedding → logistic regression (trained with
+3 noisy outdoor copies of every scream), fused with YAMNet's own scream score
+(`sqrt(p × yamnet)`), evaluated every **0.24 s**, trigger when **2 of the last 3** windows ≥ 0.40.
 
-1. **Plain logistic regression, threshold picked for 90 % recall**: test recall 0.90 ✅, but
-   68.7 false alarms/h on the background ❌❌. Unusable: a countdown every ~50 s.
-2. Hard-negative weighting, stricter positive-window selection and a small MLP did not improve
-   the recall ↔ false-alarm trade-off on validation.
-3. **Fusing with YAMNet's own scream score** (geometric mean) halved everyday false alarms at
-   the same recall. That's the exported model; threshold = best validation recall with
-   ≤ 1 false alarm/h on validation everyday sounds.
-4. Distress screams vs playful screams/cheering are hard to tell apart from 1 s of audio.
-   Most remaining false alarms are crowds, cheering, kids and laughter.
+What we learned (all choices made on the validation split, never on test or background):
 
-**What would move the numbers:** the FSD50K screams are acted, film-style, often distant or
-clipped. G6 is about a real scream *near the phone*, which should be louder and cleaner.
-Team recordings (`data/positive/team/`) and 60 min of real walk audio (`background/`) are
-the highest-value next step: rerun embed → train → false_alarms and the numbers update.
+1. **Plain logistic regression at 90 % recall**: 68.7 false alarms/h. Unusable.
+2. **Fusing with YAMNet's scream score** halved everyday false alarms at the same recall.
+3. **0.24 s hop instead of 0.48 s** was the biggest win: at 0.48 s a 1 s scream only covers
+   about two windows, so whether "2 of 3" fires depended on where the windows happened to fall
+   (a clear test scream was missed at 2 of 8 alignments, and detection took up to 5 s).
+   At 0.24 s it is caught at every alignment within ~1.9 s. Validation recall 0.57 → 0.73.
+   Costs 2× inference, which is fine at ~7–12 ms per window on WASM.
+4. No measurable gain from: hard-negative weighting, stricter positive windows, a small MLP,
+   adding YAMNet's 521 class scores as features, other k-of-n rules, noise augmentation
+   (kept anyway; it's cheap and aimed at outdoor conditions).
+5. The validation false-alarm estimate (1.2 h) was optimistic: ≤ 1/h there became 6.4/h
+   on the 4.2 h everyday background. Distress vs playful screams/cheering stays hard from 1 s.
 
-**Choosing the operating point** is a team call: `val_tradeoff_curve` in `metrics.json` lists
-recall vs everyday false alarms per threshold. Try another threshold without retraining:
-`?threshold=0.25` in the URL or `localStorage["firefly.scream_threshold"]`, or retrain with
-`train.py --fa-budget 3`. Every alert still has the 10 s cancel window.
+**What would move the numbers next:**
+- **Team recordings.** FSD50K screams are acted, often distant or clipped; a real scream near
+  the phone (G6) is louder and cleaner. Put them in `data/positive/team/<person>-<session>/`.
+- **Calibrate on real walks, not on the test set.** Record a few ordinary walks (≥ 30 min,
+  separate from the 60 min used for G4), put them in `background/`, and pick the threshold
+  from those runs: `false_alarms.py --threshold 0.5` etc. Raising the threshold trades recall
+  for fewer false alarms; every alert still has the 10 s cancel window.
+- Without retraining: `?threshold=0.5` in the URL or `localStorage["firefly.scream_threshold"]`.
+
+To reproduce the current model:
+
+```bash
+ml/.venv/bin/python ml/embed.py --in ml/data --out ml/embeddings_v2.npz --augment 3
+ml/.venv/bin/python ml/embed.py --in ml/data --out ml/embeddings_v2_off.npz --augment 3 --offset 3840
+ml/.venv/bin/python ml/train.py --embeddings ml/embeddings_v2.npz --embeddings-offset ml/embeddings_v2_off.npz \
+    --hop 0.24 --rule 2/3 --augment
+ml/.venv/bin/python ml/false_alarms.py
+```
 
 ## Browser ⇄ Python parity
 

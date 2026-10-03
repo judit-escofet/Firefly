@@ -20,8 +20,19 @@ YAMNET_ONLY_THRESHOLD = 0.5
 CHUNK_S = 120  # run YAMNet on 2-minute pieces (overlapping by one window) to bound memory
 
 
-def stream_scores(x16):
-    """Window scores for a long signal, framed identically to one continuous browser stream."""
+def stream_scores(x16, hop=HOP):
+    """Window scores for a long signal, framed identically to one continuous browser stream.
+    hop = 7680 (0.48 s) or 3840 (0.24 s: two interleaved 0.48 s grids, offset by half a hop)."""
+    if hop == HOP // 2:
+        sa, ea = stream_scores(x16)
+        sb, eb = stream_scores(x16[HOP // 2 :])
+        n = min(len(sa), len(sb))
+        s = np.empty((2 * n, sa.shape[1]), sa.dtype)
+        e = np.empty((2 * n, ea.shape[1]), ea.dtype)
+        s[0::2], s[1::2], e[0::2], e[1::2] = sa[:n], sb[:n], ea[:n], eb[:n]
+        return s, e
+    if hop != HOP:
+        raise ValueError("hop must be 7680 or 3840 samples")
     from common import WINDOW, num_windows
 
     n_total = num_windows(len(x16))
@@ -59,10 +70,14 @@ def main():
     for f in files:
         x, sr = load_audio(f)
         x16 = to_16k(x, sr)
-        scores, emb = stream_scores(x16)
+        hop = head.get("hop_samples", HOP)
+        k, n = head.get("rule_k", 2), head.get("rule_n", 3)
+        scores, emb = stream_scores(x16, hop)
         ys = yamnet_only_score(scores)
-        hs = head_score(head, emb, ys)
-        th, ty = count_triggers(hs, thr), count_triggers(ys, YAMNET_ONLY_THRESHOLD)
+        hs = head_score(head, emb, ys, scores)
+        th = count_triggers(hs, thr, k, n)
+        # baseline: YAMNet-only exactly as the spec's stage A (0.48 s hop, 2 of 3)
+        ty = count_triggers(ys if hop == HOP else ys[0::2], YAMNET_ONLY_THRESHOLD)
         secs = len(x16) / 16000
         total_s += secs
         n_head += len(th)
@@ -72,7 +87,7 @@ def main():
         st["classifier"] += len(th)
         st["yamnet_only"] += len(ty)
         for i in th:
-            events.append({"file": f.name, "at_s": round(i * HOP / 16000, 1), "score": round(float(hs[i]), 3)})
+            events.append({"file": f.name, "at_s": round(i * hop / 16000, 1), "score": round(float(hs[i]), 3)})
         second_best = np.sort(np.lib.stride_tricks.sliding_window_view(np.pad(hs, (0, 2)), 3), axis=1)[:, -2]
         near.append(float(second_best.max()))
         print(f"  {f.name}: {secs / 60:.1f} min, classifier {len(th)} triggers, yamnet-only {len(ty)}", flush=True)
