@@ -6,7 +6,8 @@ const fs = require('fs');
 const path = require('path');
 
 const MAX_FACTS = 15;
-const FILE = path.join(__dirname, '..', '.data', 'companion.json');
+// COMPANION_DATA_DIR: where the local fallback lives (Lambda: /tmp, the package is read-only).
+const FILE = path.join(process.env.COMPANION_DATA_DIR || path.join(__dirname, '..', '.data'), 'companion.json');
 
 const useDb = () => Boolean(process.env.TIGER_DATABASE_URL);
 const db = () => require('../db');

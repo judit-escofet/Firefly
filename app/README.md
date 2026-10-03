@@ -55,3 +55,12 @@ toggle, and the live **event-bus inspector**.
 - Fixed: undefined Tailwind colours/animations, a see-through countdown screen
   (`bg-…/98` isn't a Tailwind opacity), tiles inverted to light, CARTO tiles now needing a key,
   markers lost on React StrictMode remounts, "wander off" that only went 60 m off route.
+
+## Deploying to AWS (hackathon account)
+
+`deploy/aws/deploy.sh` packages the built app and the API (P1 + P3 functions, unchanged) as one
+Lambda with a public HTTPS function URL (`api/lambda.js` serves `app/dist` and `/api/*` on the
+same origin, so the mic and `/api` work on phones). Keys come from `api/local.settings.json`.
+Needs AWS credentials allowed to create a Lambda, an IAM role for it and a public function URL.
+`deploy/aws/deploy.sh --teardown` removes everything. The team plan's target remains Azure
+Static Web Apps (`app/public/staticwebapp.config.json`).
