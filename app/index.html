@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firefly</title>
+  </head>
+  <body style="font-family: system-ui, sans-serif; margin: 16px">
+    <!-- Placeholder shell so the Guardian can run on its own. P4: replace with the React app and
+         call startGuardian() once at boot (see src/guardian/README.md). -->
+    <h1>Firefly</h1>
+    <p>Placeholder shell. Try <a href="?mock=1&mic=0">?mock=1&amp;mic=0</a> (mock panel, no mic),
+       <a href="?mock=1&debug=1">?mock=1&amp;debug=1</a> (mock panel + live mic: "Start walk", then play a scream),
+       or the <a href="/guardian-test.html">Guardian test page</a>.</p>
+    <pre id="log" style="font-size: 12px; white-space: pre-wrap"></pre>
+    <script type="module">
+      import { on } from '/src/bus.js';
+      import { startGuardian } from '/src/guardian/index.js';
+      const log = document.getElementById('log');
+      on('*', (e) => {
+        if (e.type === 'guardian.score') return;
+        log.textContent = `${e.ts.slice(11, 19)} ${e.type} ${JSON.stringify({ ...e, type: undefined, ts: undefined })}\n` + log.textContent;
+      });
+      startGuardian();
+    </script>
+  </body>
+</html>

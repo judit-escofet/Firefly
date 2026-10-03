@@ -1,0 +1,23 @@
+import { defineConfig } from 'vite';
+import basicSsl from '@vitejs/plugin-basic-ssl';
+import { resolve } from 'node:path';
+
+// `npm run dev`: HTTPS (self-signed) so phones on the same Wi-Fi can use the microphone. Open
+// https://<laptop-ip>:5173/guardian-test.html on the phone and accept the certificate warning.
+// `npm run dev:local`: plain HTTP on localhost (the mic works there too, no certificate prompt).
+export default defineConfig({
+  plugins: process.env.FIREFLY_HTTP ? [] : [basicSsl()],
+  server: {
+    host: true,
+    proxy: { '/api': { target: process.env.FIREFLY_API ?? 'http://localhost:7071', changeOrigin: true } },
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        guardianTest: resolve(import.meta.dirname, 'guardian-test.html'),
+      },
+    },
+  },
+  test: { environment: 'node' },
+});

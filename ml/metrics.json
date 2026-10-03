@@ -1,0 +1,598 @@
+{
+  "model": "yamnet-embeddings + logistic regression, fused with yamnet scream score",
+  "threshold": 0.33,
+  "test_clips": {
+    "positives": 59,
+    "negatives": 908
+  },
+  "precision": 0.625,
+  "recall": 0.5932,
+  "f1": 0.6087,
+  "false_alarms_per_hour": 6.129,
+  "hours_of_background_audio": 5.384,
+  "yamnet_only_baseline": {
+    "threshold": 0.5,
+    "precision": 0.85,
+    "recall": 0.2881,
+    "f1": 0.4304,
+    "false_alarms_per_hour": 0.371
+  },
+  "details": {
+    "evaluation": "per clip; a clip is detected if 2 of 3 consecutive windows >= threshold anywhere in it",
+    "split": "GroupShuffleSplit by uploader/source recording: 64% train / 16% val / 20% test",
+    "split_seed": 43,
+    "threshold_rule": "best validation recall with <= 1.0 false alarms/hour on validation walk-like negatives",
+    "C": 0.1,
+    "train_clips": {
+      "positives": 225,
+      "negatives": 2932
+    },
+    "val_clips": {
+      "positives": 44,
+      "negatives": 708
+    },
+    "val_at_threshold": {
+      "precision": 0.5952,
+      "recall": 0.5682,
+      "f1": 0.5814,
+      "tp": 25,
+      "fp": 17,
+      "fn": 19,
+      "fa_walk_like_per_hour": 0.79,
+      "fa_hard_per_hour": 81.82
+    },
+    "val_tradeoff_curve": [
+      {
+        "threshold": 0.02,
+        "recall": 0.9773,
+        "fa_walk_like_per_hour": 94.48
+      },
+      {
+        "threshold": 0.04,
+        "recall": 0.9318,
+        "fa_walk_like_per_hour": 43.3
+      },
+      {
+        "threshold": 0.06,
+        "recall": 0.8864,
+        "fa_walk_like_per_hour": 24.41
+      },
+      {
+        "threshold": 0.08,
+        "recall": 0.8636,
+        "fa_walk_like_per_hour": 14.96
+      },
+      {
+        "threshold": 0.1,
+        "recall": 0.8636,
+        "fa_walk_like_per_hour": 8.66
+      },
+      {
+        "threshold": 0.12,
+        "recall": 0.8409,
+        "fa_walk_like_per_hour": 7.09
+      },
+      {
+        "threshold": 0.14,
+        "recall": 0.8182,
+        "fa_walk_like_per_hour": 3.94
+      },
+      {
+        "threshold": 0.16,
+        "recall": 0.8182,
+        "fa_walk_like_per_hour": 3.15
+      },
+      {
+        "threshold": 0.18,
+        "recall": 0.8182,
+        "fa_walk_like_per_hour": 3.15
+      },
+      {
+        "threshold": 0.2,
+        "recall": 0.7727,
+        "fa_walk_like_per_hour": 2.36
+      },
+      {
+        "threshold": 0.22,
+        "recall": 0.7727,
+        "fa_walk_like_per_hour": 1.57
+      },
+      {
+        "threshold": 0.24,
+        "recall": 0.7045,
+        "fa_walk_like_per_hour": 1.57
+      },
+      {
+        "threshold": 0.26,
+        "recall": 0.7045,
+        "fa_walk_like_per_hour": 1.57
+      },
+      {
+        "threshold": 0.28,
+        "recall": 0.6591,
+        "fa_walk_like_per_hour": 1.57
+      },
+      {
+        "threshold": 0.3,
+        "recall": 0.6136,
+        "fa_walk_like_per_hour": 1.57
+      },
+      {
+        "threshold": 0.32,
+        "recall": 0.5909,
+        "fa_walk_like_per_hour": 1.57
+      },
+      {
+        "threshold": 0.34,
+        "recall": 0.5682,
+        "fa_walk_like_per_hour": 0.79
+      },
+      {
+        "threshold": 0.36,
+        "recall": 0.5682,
+        "fa_walk_like_per_hour": 0.79
+      },
+      {
+        "threshold": 0.38,
+        "recall": 0.5682,
+        "fa_walk_like_per_hour": 0.79
+      },
+      {
+        "threshold": 0.4,
+        "recall": 0.5682,
+        "fa_walk_like_per_hour": 0.79
+      },
+      {
+        "threshold": 0.42,
+        "recall": 0.5227,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.44,
+        "recall": 0.5,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.46,
+        "recall": 0.4318,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.48,
+        "recall": 0.4318,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.5,
+        "recall": 0.4091,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.52,
+        "recall": 0.4091,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.54,
+        "recall": 0.3864,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.56,
+        "recall": 0.3636,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.58,
+        "recall": 0.3409,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.6,
+        "recall": 0.2727,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.62,
+        "recall": 0.2727,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.64,
+        "recall": 0.2273,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.66,
+        "recall": 0.2273,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.68,
+        "recall": 0.2273,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.7,
+        "recall": 0.2273,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.72,
+        "recall": 0.2273,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.74,
+        "recall": 0.2045,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.76,
+        "recall": 0.1591,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.78,
+        "recall": 0.1591,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.8,
+        "recall": 0.1136,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.82,
+        "recall": 0.0909,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.84,
+        "recall": 0.0455,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.86,
+        "recall": 0.0455,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.88,
+        "recall": 0.0455,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.9,
+        "recall": 0.0455,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.92,
+        "recall": 0.0227,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.94,
+        "recall": 0.0,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.96,
+        "recall": 0.0,
+        "fa_walk_like_per_hour": 0.0
+      },
+      {
+        "threshold": 0.98,
+        "recall": 0.0,
+        "fa_walk_like_per_hour": 0.0
+      }
+    ],
+    "test_counts": {
+      "classifier": {
+        "precision": 0.625,
+        "recall": 0.5932,
+        "f1": 0.6087,
+        "tp": 35,
+        "fp": 21,
+        "fn": 24
+      },
+      "yamnet_only": {
+        "precision": 0.85,
+        "recall": 0.2881,
+        "f1": 0.4304,
+        "tp": 17,
+        "fp": 3,
+        "fn": 42
+      }
+    },
+    "test_negatives_as_stream": {
+      "classifier_walk_like_per_hour": 1.99,
+      "classifier_hard_per_hour": 76.81,
+      "yamnet_only_walk_like_per_hour": 0.0,
+      "yamnet_only_hard_per_hour": 6.4,
+      "walk_like_hours": 1.505,
+      "hard_hours": 0.469
+    },
+    "test_false_positive_categories": {
+      "playful_scream": 8,
+      "Laughter": 4,
+      "Crowd": 3,
+      "Screech": 2,
+      "Cheering": 2,
+      "esc50:breathing": 1,
+      "Run": 1
+    },
+    "test_missed_positive_clips": [
+      "data/positive/fsd50k/107032.ogg",
+      "data/positive/fsd50k/132738.ogg",
+      "data/positive/fsd50k/132828.ogg",
+      "data/positive/fsd50k/135799.ogg",
+      "data/positive/fsd50k/159459.ogg",
+      "data/positive/fsd50k/169811.ogg",
+      "data/positive/fsd50k/182924.ogg",
+      "data/positive/fsd50k/19345.ogg",
+      "data/positive/fsd50k/209164.ogg",
+      "data/positive/fsd50k/219883.ogg",
+      "data/positive/fsd50k/220312.ogg",
+      "data/positive/fsd50k/271242.ogg",
+      "data/positive/fsd50k/273151.ogg",
+      "data/positive/fsd50k/273153.ogg",
+      "data/positive/fsd50k/321783.ogg",
+      "data/positive/fsd50k/321785.ogg",
+      "data/positive/fsd50k/338938.ogg",
+      "data/positive/fsd50k/345933.ogg",
+      "data/positive/fsd50k/351335.ogg",
+      "data/positive/fsd50k/353086.ogg",
+      "data/positive/fsd50k/355063.ogg",
+      "data/positive/fsd50k/395736.ogg",
+      "data/positive/fsd50k/402645.ogg",
+      "data/positive/fsd50k/432875.ogg"
+    ],
+    "hard_categories": [
+      "Applause",
+      "Chatter",
+      "Cheering",
+      "Chuckle_and_chortle",
+      "Crowd",
+      "Crying_and_sobbing",
+      "Gasp",
+      "Giggle",
+      "Laughter",
+      "Screech",
+      "esc50:crying_baby",
+      "esc50:fireworks",
+      "esc50:laughing",
+      "playful_scream"
+    ],
+    "data": "FSD50K Screaming clips (non-playful) vs 101 everyday sound categories from FSD50K + ESC-50 folds 1-4; see ml/data/ATTRIBUTION.csv",
+    "false_alarms": {
+      "threshold": 0.33,
+      "by_set": {
+        "hard": {
+          "hours": 1.174,
+          "classifier_per_hour": 15.33,
+          "yamnet_only_per_hour": 0.0
+        },
+        "walk_like": {
+          "hours": 4.21,
+          "classifier_per_hour": 3.56,
+          "yamnet_only_per_hour": 0.48
+        }
+      },
+      "classifier_triggers": 33,
+      "yamnet_only_triggers": 2,
+      "background_files": [
+        "public_hard_00.wav",
+        "public_hard_01.wav",
+        "public_hard_02.wav",
+        "public_hard_03.wav",
+        "public_hard_04.wav",
+        "public_hard_05.wav",
+        "public_hard_06.wav",
+        "public_hard_07.wav",
+        "public_hard_08.wav",
+        "public_walk_00.wav",
+        "public_walk_01.wav",
+        "public_walk_02.wav",
+        "public_walk_03.wav",
+        "public_walk_04.wav",
+        "public_walk_05.wav",
+        "public_walk_06.wav",
+        "public_walk_07.wav",
+        "public_walk_08.wav",
+        "public_walk_09.wav",
+        "public_walk_10.wav",
+        "public_walk_11.wav",
+        "public_walk_12.wav",
+        "public_walk_13.wav",
+        "public_walk_14.wav",
+        "public_walk_15.wav",
+        "public_walk_16.wav",
+        "public_walk_17.wav",
+        "public_walk_18.wav",
+        "public_walk_19.wav",
+        "public_walk_20.wav",
+        "public_walk_21.wav",
+        "public_walk_22.wav",
+        "public_walk_23.wav",
+        "public_walk_24.wav",
+        "public_walk_25.wav",
+        "public_walk_26.wav",
+        "public_walk_27.wav",
+        "public_walk_28.wav",
+        "public_walk_29.wav",
+        "public_walk_30.wav",
+        "public_walk_31.wav"
+      ],
+      "background_source": "ml/background: public_walk_*/public_hard_*.wav = ESC-50 fold 5 + FSD50K eval-split clips (never used in training), concatenated; any other file = team recordings",
+      "trigger_times": [
+        {
+          "file": "public_hard_00.wav",
+          "at_s": 3.4,
+          "score": 0.382
+        },
+        {
+          "file": "public_hard_00.wav",
+          "at_s": 6.7,
+          "score": 0.51
+        },
+        {
+          "file": "public_hard_00.wav",
+          "at_s": 181.9,
+          "score": 0.498
+        },
+        {
+          "file": "public_hard_00.wav",
+          "at_s": 183.4,
+          "score": 0.345
+        },
+        {
+          "file": "public_hard_00.wav",
+          "at_s": 369.1,
+          "score": 0.471
+        },
+        {
+          "file": "public_hard_01.wav",
+          "at_s": 457.9,
+          "score": 0.384
+        },
+        {
+          "file": "public_hard_01.wav",
+          "at_s": 473.8,
+          "score": 0.464
+        },
+        {
+          "file": "public_hard_02.wav",
+          "at_s": 259.2,
+          "score": 0.631
+        },
+        {
+          "file": "public_hard_02.wav",
+          "at_s": 264.5,
+          "score": 0.495
+        },
+        {
+          "file": "public_hard_02.wav",
+          "at_s": 277.9,
+          "score": 0.347
+        },
+        {
+          "file": "public_hard_03.wav",
+          "at_s": 29.3,
+          "score": 0.604
+        },
+        {
+          "file": "public_hard_03.wav",
+          "at_s": 94.6,
+          "score": 0.4
+        },
+        {
+          "file": "public_hard_04.wav",
+          "at_s": 78.7,
+          "score": 0.743
+        },
+        {
+          "file": "public_hard_04.wav",
+          "at_s": 142.6,
+          "score": 0.352
+        },
+        {
+          "file": "public_hard_04.wav",
+          "at_s": 211.2,
+          "score": 0.441
+        },
+        {
+          "file": "public_hard_05.wav",
+          "at_s": 469.4,
+          "score": 0.589
+        },
+        {
+          "file": "public_hard_06.wav",
+          "at_s": 262.1,
+          "score": 0.484
+        },
+        {
+          "file": "public_hard_06.wav",
+          "at_s": 471.8,
+          "score": 0.44
+        },
+        {
+          "file": "public_walk_14.wav",
+          "at_s": 321.1,
+          "score": 0.382
+        },
+        {
+          "file": "public_walk_16.wav",
+          "at_s": 352.8,
+          "score": 0.439
+        },
+        {
+          "file": "public_walk_16.wav",
+          "at_s": 474.2,
+          "score": 0.386
+        },
+        {
+          "file": "public_walk_16.wav",
+          "at_s": 476.2,
+          "score": 0.535
+        },
+        {
+          "file": "public_walk_21.wav",
+          "at_s": 212.6,
+          "score": 0.506
+        },
+        {
+          "file": "public_walk_21.wav",
+          "at_s": 213.6,
+          "score": 0.814
+        },
+        {
+          "file": "public_walk_21.wav",
+          "at_s": 214.6,
+          "score": 0.55
+        },
+        {
+          "file": "public_walk_21.wav",
+          "at_s": 215.5,
+          "score": 0.536
+        },
+        {
+          "file": "public_walk_21.wav",
+          "at_s": 217.0,
+          "score": 0.501
+        },
+        {
+          "file": "public_walk_21.wav",
+          "at_s": 217.9,
+          "score": 0.425
+        },
+        {
+          "file": "public_walk_21.wav",
+          "at_s": 226.1,
+          "score": 0.731
+        },
+        {
+          "file": "public_walk_21.wav",
+          "at_s": 227.5,
+          "score": 0.527
+        },
+        {
+          "file": "public_walk_21.wav",
+          "at_s": 230.4,
+          "score": 0.342
+        },
+        {
+          "file": "public_walk_28.wav",
+          "at_s": 412.3,
+          "score": 0.364
+        },
+        {
+          "file": "public_walk_28.wav",
+          "at_s": 413.8,
+          "score": 0.392
+        }
+      ]
+    }
+  }
+}

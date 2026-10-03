@@ -2,3 +2,18 @@ node_modules/
 api/local.settings.json
 .env
 *.log
+
+# --- P2 Guardian ---
+dist/
+.DS_Store
+.env*
+
+# Guardian ML: big/derived files stay local (re-create with the commands in ml/README.md)
+ml/.venv/
+ml/raw/
+ml/data/positive/fsd50k/
+ml/data/negative/fsd50k/
+ml/data/negative/esc50/
+ml/background/
+ml/embeddings.npz
+__pycache__/
