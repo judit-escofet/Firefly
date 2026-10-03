@@ -23,6 +23,8 @@ app.http('end', {
 
     await logEvent(walkId, { ts, type: body.reason === 'arrived' ? 'arrived' : 'walk_stopped', texted: outcome.texted });
     return json(200, {
+      ok: true,
+      notified: outcome.texted,
       walk_id: walkId,
       status: body.reason === 'arrived' ? 'home_safe' : 'ended',
       ...outcome,

@@ -1,1 +1,13 @@
-{ "saved": true, "texted": ["+15551230001", "+15551230002"], "duplicate": false }
+{
+  "ok": true,
+  "notified": [
+    "+15551230001",
+    "+15551230002"
+  ],
+  "saved": true,
+  "texted": [
+    "+15551230001",
+    "+15551230002"
+  ],
+  "duplicate": false
+}

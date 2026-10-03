@@ -4,8 +4,10 @@ import { classifyCheckinKeywords } from '../src/companion/checkinWords.js';
 import { parseServerMessage, pcm16Base64 } from '../src/companion/stt.js';
 import { createFakeClock } from '../src/guardian/clock.js';
 
+// setImmediate, not setTimeout(0): Windows timers are ~15 ms coarse, which made the long
+// news test exceed vitest's 5 s limit there. Both let pending promises settle.
 const flush = async (n = 6) => {
-  for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0));
+  for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r));
 };
 
 function setup({ reply = { reply_text: 'Tell me more!', topic: 'day' }, classifyResult = null } = {}) {

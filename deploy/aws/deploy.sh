@@ -46,7 +46,30 @@ cp -R "$ROOT/api/src" "$ROOT/api/lib" "$ROOT/api/db" "$ROOT/api/package.json" "$
 mkdir -p "$PKG/static" && cp "$ROOT/app/public/track/index.html" "$PKG/static/track.html"
 (cd "$PKG" && npm ci --omit=dev --silent)
 cp -R "$ROOT/app/dist" "$PKG/public"
-(cd "$PKG" && zip -qr9 "$WORK/function.zip" . -x '*.map')
+if command -v zip >/dev/null 2>&1; then
+  (cd "$PKG" && zip -qr9 "$WORK/function.zip" . -x '*.map')
+else
+  # Windows Git Bash has no zip: use Python's zipfile (forward-slash paths, which Lambda needs).
+  # Pick a Python that actually runs (on Windows, python3 can be a Microsoft Store placeholder).
+  PY=""
+  for c in python3 python py; do
+    if "$c" -c 'import zipfile' >/dev/null 2>&1; then PY="$c"; break; fi
+  done
+  [[ -n "$PY" ]] || { echo "!! need zip or python to package"; exit 1; }
+  SRC="$PKG"; OUT="$WORK/function.zip"
+  if command -v cygpath >/dev/null 2>&1; then SRC=$(cygpath -w "$SRC"); OUT=$(cygpath -w "$OUT"); fi
+  "$PY" - "$SRC" "$OUT" <<'PYEOF'
+import os, sys, zipfile
+src, out = sys.argv[1], sys.argv[2]
+with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+    for root, _, files in os.walk(src):
+        for name in files:
+            if name.endswith(".map"):
+                continue
+            full = os.path.join(root, name)
+            z.write(full, os.path.relpath(full, src).replace(os.sep, "/"))
+PYEOF
+fi
 SIZE=$(wc -c < "$WORK/function.zip")
 echo "   function.zip: $((SIZE / 1024 / 1024)) MB"
 if (( SIZE > 50 * 1024 * 1024 )); then echo "!! over Lambda's 50 MB direct-upload limit"; exit 1; fi

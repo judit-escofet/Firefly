@@ -90,12 +90,13 @@ The `AppUrl` output is your app's base URL. Give it to P4: the API lives at `App
 
 ## Hosting options
 
-The same code runs two ways:
+The same code runs these ways:
 
 | Where | How | Notes |
 |---|---|---|
 | Normal AWS account | `deploy.ps1` (SAM) | Full setup: WebSocket live updates, Amazon Location routes, S3 clips |
-| AWS Workshop Studio sandbox | `deploy-workshop.ps1` | That sandbox blocks CloudFormation, API Gateway, Amazon Location and S3, so it uses a Lambda function URL, straight-line routes and clips stored in Tiger Data, and the page polls every 3 s |
+| **AWS Workshop Studio sandbox, whole app (use this)** | `deploy/aws/deploy.sh` (the team's) | App + API + tracking page on one Lambda URL. Run from Git Bash with `FIREFLY_ROLE=DemoToolLambdaRole`; it copies `api/local.settings.json` into the Lambda |
+| AWS Workshop Studio sandbox, API only | `deploy-workshop.ps1` | That sandbox blocks CloudFormation, API Gateway, Amazon Location and S3, so it uses a Lambda function URL, straight-line routes and clips stored in Tiger Data, and the page polls every 3 s |
 
 ## Tests
 
@@ -103,7 +104,7 @@ The same code runs two ways:
 cd api && npm test
 ```
 
-21 tests:
+29 tests:
 - route math on a hand-made L-shaped route (W4, W5)
 - validation 400s (W1)
 - the exact alert text and the 60 s guard (W6)

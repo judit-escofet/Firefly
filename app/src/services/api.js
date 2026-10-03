@@ -97,6 +97,8 @@ export const api = {
           code_phrase: profile.code_phrase,
           pin_hash: profile.pin_hash,
           duress_pin_hash: profile.duress_pin_hash,
+          interests: profile.news_interests ?? [],
+          ...(profile.home ? { home: { lat: profile.home.lat, lng: profile.home.lng, label: profile.home.label ?? 'Home' } } : {}),
         });
         if (r.user_id) local.user_id = r.user_id;
         synced = true;

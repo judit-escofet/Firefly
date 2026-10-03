@@ -29,6 +29,19 @@ try {
 const { getPool } = require('./index');
 
 (async () => {
+  // Upgrade: the summary views from older schema versions used different column names
+  // (bucket, max_score, ...). CREATE ... IF NOT EXISTS can't change them, so drop the old shapes;
+  // they are rebuilt below from the raw tables, so no data is lost.
+  for (const [view, newColumn] of [['alerts_hourly', 'hour'], ['scores_minutely', 'minute']]) {
+    const { rows } = await getPool().query(
+      `SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = 'bucket'`, [view],
+    );
+    if (rows.length) {
+      await getPool().query(`DROP MATERIALIZED VIEW ${view} CASCADE`);
+      console.log(`Rebuilding ${view} with the team plan's columns (${newColumn}, ...)`);
+    }
+  }
+
   // One statement at a time: continuous aggregates can't be created inside a transaction,
   // and a multi-statement query runs as one implicit transaction.
   const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8')

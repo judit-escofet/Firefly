@@ -62,7 +62,8 @@ app.http('events', {
     }
 
     await logEvent(walkId, { ...ev, texted: outcome.texted });
-    return json(200, { saved: true, ...outcome });
+    // ok/notified are the team plan's names; saved/texted are kept for existing callers.
+    return json(200, { ok: true, notified: outcome.texted, saved: true, ...outcome });
   }),
 });
 

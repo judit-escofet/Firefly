@@ -1,6 +1,7 @@
 -- Firefly schema (Tiger Data: Postgres + TimescaleDB), database "firefly".
--- Owner: P3. Reconcile column names with the team plan's "Database: Tiger Data" section.
--- Safe to re-run: every statement is idempotent.
+-- Owner: P3. Column names follow the team plan's "Database: Tiger Data" section.
+-- Safe to re-run: every statement is idempotent. Run it with `node db/migrate.js`, which also
+-- upgrades databases created from older versions of this file.
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
@@ -13,9 +14,13 @@ CREATE TABLE IF NOT EXISTS users (
   code_phrase      TEXT NOT NULL,
   pin_hash         TEXT NOT NULL,
   duress_pin_hash  TEXT NOT NULL,
+  interests        TEXT[] NOT NULL DEFAULT '{}',  -- news interests, e.g. {tech,music}
+  home             JSONB,                     -- { "lat": 40.742, "lng": -74.179, "label": "Home" }
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE users ADD COLUMN IF NOT EXISTS interests TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS home JSONB;
 
 CREATE TABLE IF NOT EXISTS walks (
   walk_id          TEXT PRIMARY KEY,
@@ -106,39 +111,41 @@ CREATE INDEX IF NOT EXISTS conversation_turns_walk_ts_idx ON conversation_turns 
 CREATE TABLE IF NOT EXISTS detector_scores (
   ts               TIMESTAMPTZ NOT NULL,
   walk_id          TEXT NOT NULL,
-  score            REAL NOT NULL,             -- numbers only, never audio
+  score            REAL NOT NULL,             -- the plan's scream_score; numbers only, never audio
+  triggered        BOOLEAN NOT NULL DEFAULT false,
   label            TEXT
 );
+ALTER TABLE detector_scores ADD COLUMN IF NOT EXISTS triggered BOOLEAN NOT NULL DEFAULT false;
 SELECT create_hypertable('detector_scores', 'ts', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS detector_scores_walk_ts_idx ON detector_scores (walk_id, ts DESC);
 
 -- ---------- Continuous aggregates ----------
 -- materialized_only = false: real-time aggregation, so fresh rows show up before the refresh job runs.
 
+-- Columns as in the team plan: alerts_hourly(hour, type, n), every event type.
 CREATE MATERIALIZED VIEW IF NOT EXISTS alerts_hourly
 WITH (timescaledb.continuous, timescaledb.materialized_only = false) AS
-SELECT time_bucket(INTERVAL '1 hour', ts) AS bucket,
+SELECT time_bucket(INTERVAL '1 hour', ts) AS hour,
        type,
-       count(*)                           AS events,
-       count(DISTINCT walk_id)            AS walks
+       count(*) AS n
 FROM walk_events
-WHERE type IN ('alert_sent', 'duress')
-GROUP BY bucket, type
+GROUP BY hour, type
 WITH NO DATA;
 
 SELECT add_continuous_aggregate_policy('alerts_hourly',
   start_offset => INTERVAL '7 days', end_offset => INTERVAL '1 minute',
   schedule_interval => INTERVAL '5 minutes', if_not_exists => TRUE);
 
+-- Columns as in the team plan (P2 tunes with: SELECT minute, peak, triggers FROM scores_minutely ...).
 CREATE MATERIALIZED VIEW IF NOT EXISTS scores_minutely
 WITH (timescaledb.continuous, timescaledb.materialized_only = false) AS
-SELECT time_bucket(INTERVAL '1 minute', ts) AS bucket,
+SELECT time_bucket(INTERVAL '1 minute', ts) AS minute,
        walk_id,
-       max(score)  AS max_score,
-       avg(score)  AS avg_score,
-       count(*)    AS samples
+       max(score)                         AS peak,
+       count(*) FILTER (WHERE triggered)  AS triggers,
+       count(*)                           AS samples
 FROM detector_scores
-GROUP BY bucket, walk_id
+GROUP BY minute, walk_id
 WITH NO DATA;
 
 SELECT add_continuous_aggregate_policy('scores_minutely',

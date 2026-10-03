@@ -205,3 +205,43 @@ test('W10: clip links reject bad file names and need no AWS for that check', asy
   const res = await call('clipGet', { method: 'GET', params: { walk_id: 'w_456', file: '../../etc' } });
   assert.equal(res.status, 404);
 });
+
+test('team plan contract: scores take scream_score/triggered; events and end return ok/notified', async () => {
+  responders = [[/INSERT INTO detector_scores/, (p) => ({ rowCount: p[0].length })]];
+  const res = await call('scores', { params: { walk_id: 'w_456' }, body: { scores: [
+    { ts: '2026-10-03T23:40:00Z', scream_score: 0.12, triggered: false },
+    { ts: '2026-10-03T23:40:01Z', scream_score: 0.93, triggered: true },
+  ] } });
+  assert.deepEqual(res.jsonBody, { saved: 2 });
+  assert.deepEqual(calls[0].params[2], [0.12, 0.93]);
+  assert.deepEqual(calls[0].params[3], [false, true]);
+  assert.equal((await call('scores', { params: { walk_id: 'w_456' }, body: { scores: [{ ts: '2026-10-03T23:40:00Z', scream_score: 0.1, triggered: 'yes' }] } })).status, 400);
+
+  responders = [[/FROM walks w JOIN users/, () => ({ rows: [{ walk_id: 'w_456', share_token: 'Xk3v9QpL2mN7rT8wZ1yB4cDe', name: 'Priya', contacts: goodProfile.contacts }] })]];
+  const ev = await call('events', { params: { walk_id: 'w_456' }, body: { type: 'countdown_started', source: 'scream' } });
+  assert.equal(ev.jsonBody.ok, true);
+  assert.deepEqual(ev.jsonBody.notified, []);
+  const end = await call('end', { params: { walk_id: 'w_456' }, body: { reason: 'stopped' } });
+  assert.equal(end.jsonBody.ok, true);
+});
+
+test('profile stores interests and home; bad values are 400', async () => {
+  const res = await call('profile', { body: { ...goodProfile, interests: ['Tech', 'music', 'tech'], home: { lat: 40.742, lng: -74.179, label: 'Home' } } });
+  assert.equal(res.status, 200);
+  const insert = calls.find((c) => /INSERT INTO users/.test(c.sql));
+  assert.deepEqual(insert.params[6], ['tech', 'music']);
+  assert.deepEqual(JSON.parse(insert.params[7]), { lat: 40.742, lng: -74.179, label: 'Home' });
+  assert.equal((await call('profile', { body: { ...goodProfile, interests: 'tech' } })).status, 400);
+  assert.equal((await call('profile', { body: { ...goodProfile, home: { lat: 200, lng: 0 } } })).status, 400);
+});
+
+test('walk route points are [lat, lng] pairs, as in the team plan', async () => {
+  responders = [
+    [/FROM users/, () => ({ rows: [{ name: 'Priya', contacts: goodProfile.contacts }] })],
+    [/INSERT INTO walks/, (p) => ({ rows: [{ walk_id: p[0], user_id: p[1], start_lat: p[2], start_lng: p[3], dest_lat: p[4], dest_lng: p[5],
+      dest_label: p[6], route: JSON.parse(p[7]), distance_m: p[8], eta_s: p[9], share_token: p[10], status: 'walking', started_at: new Date(), ended_at: null }] })],
+  ];
+  const res = await call('walks', { body: { user_id: 'u_test', start: { lat: 40.7425, lng: -74.1781 }, destination: { lat: 40.739, lng: -74.172 } } });
+  const [first] = res.jsonBody.route.points;
+  assert.ok(Array.isArray(first) && first.length === 2 && first.every(Number.isFinite));
+});

@@ -57,7 +57,7 @@ function walkJson(w, base) {
     start: { lat: w.start_lat, lng: w.start_lng },
     destination: { lat: w.dest_lat, lng: w.dest_lng, label: w.dest_label },
     route: {
-      points: w.route.map(([lat, lng]) => ({ lat, lng })),
+      points: w.route, // [[lat, lng], ...] as in the team plan
       distance_m: w.distance_m,
       eta_s: w.eta_s,
     },
