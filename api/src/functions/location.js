@@ -1,8 +1,8 @@
 // POST /api/walks/{walk_id}/location — called by the app every 5 seconds.
-const { app } = require('@azure/functions');
+const { app } = require('../../lib/router');
 const db = require('../../db');
 const { progress } = require('../../lib/geo');
-const { pushToWalk } = require('../../lib/pubsub');
+const { pushToWalk } = require('../../lib/realtime');
 const {
   handle, readJson, json, badRequest, notFound, HttpError,
   requireLatLng, optionalTs, requireWalkId, isNum,

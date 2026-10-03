@@ -47,6 +47,14 @@ CREATE TABLE IF NOT EXISTS memories (
 );
 CREATE INDEX IF NOT EXISTS memories_user_idx ON memories (user_id, created_at DESC);
 
+-- Open WebSocket connections from tracking pages (API Gateway WebSocket API).
+CREATE TABLE IF NOT EXISTS ws_connections (
+  connection_id    TEXT PRIMARY KEY,
+  walk_id          TEXT NOT NULL REFERENCES walks(walk_id) ON DELETE CASCADE,
+  connected_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ws_connections_walk_idx ON ws_connections (walk_id);
+
 -- ---------- Hypertables ----------
 
 CREATE TABLE IF NOT EXISTS locations (

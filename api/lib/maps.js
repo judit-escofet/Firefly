@@ -1,32 +1,44 @@
-// Azure Maps walking route. Without AZURE_MAPS_KEY (or with MOCK_MAPS=1) it returns a straight-line
-// mock route, which doubles as the demo's fallback mode.
+// Walking route from Amazon Location Service (Routes API v2), using the Lambda's IAM role: no key.
+// With MOCK_MAPS=1, or locally without AWS credentials, it returns a straight-line mock route,
+// which doubles as the demo's fallback mode.
 const { haversine, FALLBACK_SPEED } = require('./geo');
 
+let client;
+
+function useMock() {
+  if (process.env.MOCK_MAPS === '1') return true;
+  const inLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const hasCreds = !!(process.env.AWS_ACCESS_KEY_ID || process.env.AWS_PROFILE);
+  return !inLambda && !hasCreds;
+}
+
 async function walkingRoute(start, dest) {
-  if (!process.env.AZURE_MAPS_KEY || process.env.MOCK_MAPS === '1') return mockRoute(start, dest);
+  if (useMock()) return mockRoute(start, dest);
 
-  const url = new URL('https://atlas.microsoft.com/route/directions/json');
-  url.searchParams.set('api-version', '1.0');
-  url.searchParams.set('query', `${start[0]},${start[1]}:${dest[0]},${dest[1]}`);
-  url.searchParams.set('travelMode', 'pedestrian');
-  url.searchParams.set('subscription-key', process.env.AZURE_MAPS_KEY);
+  const { GeoRoutesClient, CalculateRoutesCommand } = require('@aws-sdk/client-geo-routes');
+  if (!client) client = new GeoRoutesClient({});
+  const res = await client.send(new CalculateRoutesCommand({
+    Origin: [start[1], start[0]],            // Amazon Location uses [lng, lat]
+    Destination: [dest[1], dest[0]],
+    TravelMode: 'Pedestrian',
+    LegGeometryFormat: 'Simple',
+    LegAdditionalFeatures: ['Summary'],
+  }), { abortSignal: AbortSignal.timeout(8000) });
 
-  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    const err = new Error(`Azure Maps returned ${res.status}: ${text.slice(0, 200)}`);
-    err.status = res.status;
-    throw err;
+  const route = res.Routes && res.Routes[0];
+  if (!route) throw new Error('Amazon Location found no walking route');
+  const points = route.Legs.flatMap((leg) =>
+    ((leg.Geometry && leg.Geometry.LineString) || []).map(([lng, lat]) => [lat, lng]));
+  if (points.length < 2) throw new Error('Amazon Location returned a route without geometry');
+
+  let distance = route.Summary && route.Summary.Distance;
+  let duration = route.Summary && route.Summary.Duration;
+  if (distance == null) {
+    distance = 0;
+    for (let i = 1; i < points.length; i++) distance += haversine(points[i - 1], points[i]);
   }
-  const data = await res.json();
-  const route = data.routes && data.routes[0];
-  if (!route) throw new Error('Azure Maps found no walking route');
-  const points = route.legs.flatMap((leg) => leg.points.map((p) => [p.latitude, p.longitude]));
-  return {
-    points,
-    distance_m: route.summary.lengthInMeters,
-    eta_s: route.summary.travelTimeInSeconds,
-  };
+  if (duration == null) duration = distance / FALLBACK_SPEED;
+  return { points, distance_m: distance, eta_s: duration };
 }
 
 function mockRoute(start, dest, steps = 20) {

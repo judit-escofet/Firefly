@@ -2,7 +2,7 @@
   { "type": "position", "lat": 40.742, "lng": -74.1776, "accuracy_m": 8, "ts": "2026-10-03T23:40:00.000Z",
     "remaining_m": 540, "eta_s": 410, "on_route": true, "off_route_m": 12, "near_destination": false },
   { "type": "status", "status": "alert", "clip_url": null },
-  { "type": "clip", "clip_url": "https://fireflystore.blob.core.windows.net/clips/w_456/1759534875000.webm?sig=REDACTED" },
+  { "type": "clip", "clip_url": "https://abc123def.execute-api.us-east-1.amazonaws.com/api/clips/w_456/3f9c2a7e5b1d4c8fa0e6b2d9c7a1f4e3.webm" },
   { "type": "status", "status": "home_safe" },
   { "type": "status", "status": "ended", "message": "walk ended" }
 ]

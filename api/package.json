@@ -2,17 +2,27 @@
   "name": "firefly-api",
   "version": "1.0.0",
   "private": true,
-  "main": "src/functions/*.js",
+  "files": [
+    "src/",
+    "lib/",
+    "db/",
+    "static/"
+  ],
   "scripts": {
-    "start": "func start",
-    "test": "node --test test/*.test.js"
+    "start": "node local-server.js",
+    "test": "node --test test/*.test.js",
+    "migrate": "node db/migrate.js",
+    "build:page": "node -e \"require('fs').mkdirSync('static',{recursive:true});require('fs').copyFileSync('../app/public/track/index.html','static/track.html')\""
   },
   "dependencies": {
-    "@azure/functions": "^4.5.0",
-    "@azure/storage-blob": "^12.24.0",
-    "@azure/web-pubsub": "^1.1.3",
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.700.0",
+    "@aws-sdk/client-geo-routes": "^3.700.0",
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/s3-request-presigner": "^3.700.0",
     "pg": "^8.12.0",
     "twilio": "^5.3.0"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=20"
+  }
 }

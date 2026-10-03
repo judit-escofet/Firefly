@@ -1,6 +1,6 @@
 // POST /api/walks/{walk_id}/events — log every event; alerts and arrivals also text and push.
 // GET  /api/walks/{walk_id}/events?token=<share_token> — events log for the demo view.
-const { app } = require('@azure/functions');
+const { app } = require('../../lib/router');
 const db = require('../../db');
 const {
   handle, readJson, json, badRequest, notFound, optionalTs, requireWalkId, isNum, baseUrl,

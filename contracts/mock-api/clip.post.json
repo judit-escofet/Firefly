@@ -1,4 +1,4 @@
 {
-  "clip_url": "https://fireflystore.blob.core.windows.net/clips/w_456/1759534875000.webm?sv=2025-01-05&se=2026-10-04T23%3A41%3A15Z&sr=b&sp=r&sig=REDACTED",
+  "clip_url": "https://abc123def.execute-api.us-east-1.amazonaws.com/api/clips/w_456/3f9c2a7e5b1d4c8fa0e6b2d9c7a1f4e3.webm",
   "expires_at": "2026-10-04T23:41:15.000Z"
 }
