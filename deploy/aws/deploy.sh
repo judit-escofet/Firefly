@@ -3,7 +3,9 @@
 #
 #   AWS credentials in the environment (AWS_ACCESS_KEY_ID / SECRET / SESSION_TOKEN, region), then:
 #   ./deploy/aws/deploy.sh            # build, package, create or update, print the URL
-#   ./deploy/aws/deploy.sh --teardown # delete the function, its URL and the role
+#   ./deploy/aws/deploy.sh --teardown # delete the function and its URL (and the role, if this script made it)
+#   FIREFLY_ROLE=<existing role> ./deploy/aws/deploy.sh   # accounts that can't create IAM roles
+#     (AWS Workshop Studio: DemoToolLambdaRole has only AWSLambdaBasicExecutionRole)
 #
 # Why one Lambda: the mic needs HTTPS and the app expects /api on the same origin. The function
 # URL is HTTPS; lambda.js serves app/dist and runs the Azure-Functions-style API under /api/*.
@@ -23,8 +25,11 @@ aws() { command aws --region "$REGION" "$@"; }
 if [[ "${1:-}" == "--teardown" ]]; then
   aws lambda delete-function-url-config --function-name "$NAME" 2>/dev/null || true
   aws lambda delete-function --function-name "$NAME" && echo "deleted function $NAME" || true
-  aws iam detach-role-policy --role-name "$ROLE" --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole 2>/dev/null || true
-  aws iam delete-role --role-name "$ROLE" && echo "deleted role $ROLE" || true
+  # Only delete the role this script creates; never a role someone else provided (FIREFLY_ROLE).
+  if [[ "$ROLE" == "firefly-app-lambda" ]]; then
+    aws iam detach-role-policy --role-name "$ROLE" --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole 2>/dev/null || true
+    aws iam delete-role --role-name "$ROLE" 2>/dev/null && echo "deleted role $ROLE" || true
+  fi
   exit 0
 fi
 
