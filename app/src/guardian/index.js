@@ -14,7 +14,7 @@ import { createCodePhraseSpotter, loadCodePhrase } from './codePhrase.js';
 import { createCheckinTriggers } from './checkins.js';
 import { createScoreLog } from './scoreLog.js';
 import { createClipBuffer, encodeWav } from './audio/clipBuffer.js';
-import { beginMicSession } from './audio/micSession.js';
+import { acquireMic } from '../audio/micHub.js';
 
 let instance = null;
 
@@ -28,6 +28,7 @@ export function startGuardian({
 
   let walkId = null;
   let detector = null;
+  let heldMic = null;
   let detectorStarting = null;
   let tickTimer = null;
   const clipBuffer = createClipBuffer();
@@ -72,11 +73,11 @@ export function startGuardian({
     if (!mic || detector || detectorStarting) return;
     status.mode = 'loading';
     // Synchronously, still inside the "Walk with me" tap: iOS only starts audio from a gesture.
-    const session = beginMicSession();
+    // The hub is shared with the companion's speech-to-text (one mic for the whole app).
+    heldMic = acquireMic();
     detectorStarting = import('./audio/detector.js') // lazy: keeps TF.js out of the initial bundle
       .then(({ startScreamDetector }) =>
         startScreamDetector({
-          session,
           onStatus: (t) => (status.loading = t),
           onAudio: pushAudio,
           onScore: (s) => {
@@ -106,6 +107,8 @@ export function startGuardian({
     await detectorStarting;
     await detector?.stop();
     detector = null;
+    heldMic?.release();
+    heldMic = null;
     if (status.mode !== 'error') status.mode = 'off';
   }
 

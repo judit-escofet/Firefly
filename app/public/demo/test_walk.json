@@ -1,0 +1,14 @@
+{
+  "duration_s": 18.87,
+  "cues": [
+    {
+      "at_s": 1.5,
+      "text": "Hey! Long day today. My exam was kind of rough."
+    },
+    {
+      "at_s": 13.19,
+      "text": "Oh no, I think I left the oven on."
+    }
+  ],
+  "voice": "ElevenLabs \"Jessica\" (library voice)"
+}

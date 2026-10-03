@@ -1,4 +1,4 @@
-"""Windowed-sinc resampler: exact mirror of app/src/guardian/audio/resampler.js.
+"""Windowed-sinc resampler: exact mirror of app/src/audio/resampler.js.
 
 Output sample n sits at input position p = n * in_rate / out_rate.
   y[n] = sum_k x[k] * h(p - k),  k in [ceil(p - L), floor(p + L)],  x[k] = 0 for k < 0

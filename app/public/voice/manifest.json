@@ -1,0 +1,82 @@
+{
+  "voice_id": "icKXBYNmxkj1YTU4bl0F",
+  "model": "eleven_flash_v2_5",
+  "lines": {
+    "greeting": {
+      "text": "Hey, I'm right here with you. How was your day?",
+      "file": "/voice/greeting.mp3"
+    },
+    "checkin_long_stop": {
+      "text": "Looks like you've stopped for a bit. Everything okay?",
+      "file": "/voice/checkin_long_stop.mp3"
+    },
+    "checkin_off_route": {
+      "text": "You've wandered off the route. Are you okay?",
+      "file": "/voice/checkin_off_route.mp3"
+    },
+    "checkin_manual": {
+      "text": "Just checking in. Are you okay?",
+      "file": "/voice/checkin_manual.mp3"
+    },
+    "checkin_retry": {
+      "text": "I didn't catch that. Are you okay?",
+      "file": "/voice/checkin_retry.mp3"
+    },
+    "ack_ok": {
+      "text": "Glad to hear it. I'm right here with you.",
+      "file": "/voice/ack_ok.mp3"
+    },
+    "ack_not_ok": {
+      "text": "Okay. I'm right here, keep talking to me.",
+      "file": "/voice/ack_not_ok.mp3"
+    },
+    "home": {
+      "text": "You made it home! Your people know you're in. Sleep well.",
+      "file": "/voice/home.mp3"
+    },
+    "mock_chat_1": {
+      "text": "That sounds like a lot. What's one good thing that happened today?",
+      "file": "/voice/mock_chat_1.mp3"
+    },
+    "mock_chat_2": {
+      "text": "I hear you. What are you having for dinner tonight?",
+      "file": "/voice/mock_chat_2.mp3"
+    },
+    "mock_chat_3": {
+      "text": "Nice! Tell me more, I'm listening.",
+      "file": "/voice/mock_chat_3.mp3"
+    },
+    "mock_chat_4": {
+      "text": "We're getting closer. What's the plan when you get home?",
+      "file": "/voice/mock_chat_4.mp3"
+    },
+    "mock_idle_1": {
+      "text": "How is the walk going so far?",
+      "file": "/voice/mock_idle_1.mp3"
+    },
+    "mock_idle_2": {
+      "text": "What's been on your mind today?",
+      "file": "/voice/mock_idle_2.mp3"
+    },
+    "mock_idle_3": {
+      "text": "Listened to any good music lately?",
+      "file": "/voice/mock_idle_3.mp3"
+    },
+    "mock_checkin_1": {
+      "text": "Hey, just checking in. Everything alright?",
+      "file": "/voice/mock_checkin_1.mp3"
+    },
+    "mock_calm_1": {
+      "text": "Tell me about the best part of your day.",
+      "file": "/voice/mock_calm_1.mp3"
+    },
+    "mock_calm_2": {
+      "text": "What are you going to cook tonight?",
+      "file": "/voice/mock_calm_2.mp3"
+    },
+    "mock_calm_3": {
+      "text": "What's the next show you want to watch?",
+      "file": "/voice/mock_calm_3.mp3"
+    }
+  }
+}

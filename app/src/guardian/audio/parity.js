@@ -1,7 +1,7 @@
 // Browser ⇄ Python YAMNet parity: same WAV in, same resampling + framing, compare embeddings.
 // Used by guardian-test.html (WebGL) and scripts/parity.mjs (Node, CPU).
 
-import { resample } from './resampler.js';
+import { resample } from '../../audio/resampler.js';
 import { frameSignal, yamnetOnlyScore, headScore } from './windows.js';
 
 // Minimal PCM WAV reader (16-bit int or 32-bit float, any channels → mono float32).

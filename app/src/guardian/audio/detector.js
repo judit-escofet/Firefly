@@ -1,12 +1,10 @@
-// Scream detector (browser): mic → AudioWorklet → 16 kHz → 0.96 s windows / 0.48 s hop → YAMNet
-// → score (trained head, or YAMNet-only fallback) → "2 of last 3 ≥ threshold" rule.
+// Scream detector (browser): shared mic (src/audio/micHub.js, 16 kHz) → 0.96 s windows every
+// 0.24 s → YAMNet → score (trained head, or YAMNet-only fallback) → "2 of last 3 ≥ threshold".
 // Audio stays in memory; the clip buffer is fed from the same 16 kHz stream.
 
-import workletUrl from './capture-worklet.js?url';
-import { createResampler } from './resampler.js';
 import { createWindower, createTriggerRule, yamnetOnlyScore, headScore, validateHead, HOP_SAMPLES } from './windows.js';
 import { loadYamnetFastest } from './backend.js';
-import { beginMicSession } from './micSession.js';
+import { acquireMic } from '../../audio/micHub.js';
 
 export const HEAD_URL = '/models/scream_head.json';
 export const YAMNET_ONLY_THRESHOLD = 0.5;
@@ -32,26 +30,25 @@ function thresholdOverride() {
   return Number.isFinite(v) ? v : null;
 }
 
-// session: from beginMicSession(), created synchronously in the user's tap (required on iOS).
+// Uses the shared mic hub (src/audio/micHub.js). Whoever starts listening should call
+// acquireMic() synchronously inside the user's tap first (iOS); the detector then takes its own
+// reference to that same hub here and releases it on stop().
 // onScore({ts, score, yamnetScore, triggered, ms}); onTrigger({confidence, detail}); onAudio(Float32Array 16k)
-export async function startScreamDetector({ session, onScore, onTrigger, onAudio, useHead = true, headUrl, yamnetUrl, onStatus } = {}) {
-  session ??= beginMicSession(); // fine on desktop; on iOS pass one opened inside the tap
-  const { ctx } = session;
-  if (!ctx) await session.stream; // throws the reason (no HTTPS / no Web Audio)
-  let yamnet, head, stream;
+export async function startScreamDetector({ onScore, onTrigger, onAudio, useHead = true, headUrl, yamnetUrl, onStatus } = {}) {
+  const mic = acquireMic();
+  let yamnet, head;
   try {
     onStatus?.('loading model + waiting for microphone permission');
-    [yamnet, head, stream] = await Promise.all([
+    [yamnet, head] = await Promise.all([
       loadYamnetFastest({ url: yamnetUrl, onStatus }),
       useHead ? loadHead(headUrl) : null,
-      session.stream,
+      mic.ready,
     ]);
   } catch (err) {
-    if (err?.name === 'NotAllowedError') err = new Error('microphone permission denied: allow the mic for this site, then reload');
-    await ctx.close().catch(() => {});
-    session.stream.then((s) => s.getTracks().forEach((t) => t.stop())).catch(() => {});
+    mic.release();
     throw err;
   }
+  const { ctx } = mic;
   const threshold = thresholdOverride() ?? head?.threshold ?? YAMNET_ONLY_THRESHOLD;
   const k = head?.rule_k ?? 2;
   const n = head?.rule_n ?? 3;
@@ -59,15 +56,6 @@ export async function startScreamDetector({ session, onScore, onTrigger, onAudio
   const rule = createTriggerRule({ threshold, k, n });
   const recent = [];
 
-  await ctx.audioWorklet.addModule(workletUrl);
-  if (ctx.state === 'suspended') await ctx.resume().catch(() => {});
-  const source = ctx.createMediaStreamSource(stream);
-  const node = new AudioWorkletNode(ctx, 'firefly-capture');
-  const sink = ctx.createGain();
-  sink.gain.value = 0; // keep the graph pulling without playing the mic back
-  source.connect(node).connect(sink).connect(ctx.destination);
-
-  const resampler = createResampler(ctx.sampleRate);
   // Embedding history for heads with context: window i's grid-mates are i−step, i−2·step…
   const step = Math.round(HOP_SAMPLES / hop); // 2 at the 0.24 s hop
   const history = [];
@@ -124,11 +112,10 @@ export async function startScreamDetector({ session, onScore, onTrigger, onAudio
   }
 
   const windower = createWindower(run, hop);
-  node.port.onmessage = ({ data }) => {
-    const x16 = resampler.push(data);
+  const unsubscribe = mic.subscribe((x16) => {
     onAudio?.(x16);
     windower.push(x16);
-  };
+  });
 
   return {
     mode: head ? 'classifier' : 'yamnet-only',
@@ -138,17 +125,15 @@ export async function startScreamDetector({ session, onScore, onTrigger, onAudio
     get contextState() {
       return ctx.state; // 'suspended' on iOS if the session wasn't opened inside a tap
     },
-    nativeRate: ctx.sampleRate,
+    nativeRate: mic.nativeRate,
+    mic,
     rule,
     hopSeconds: hop / 16000,
     stats,
     numTensors: yamnet.numTensors,
     async stop() {
-      node.port.onmessage = null;
-      source.disconnect();
-      node.disconnect();
-      await ctx.close().catch(() => {});
-      stream.getTracks().forEach((t) => t.stop());
+      unsubscribe();
+      mic.release();
     },
   };
 }

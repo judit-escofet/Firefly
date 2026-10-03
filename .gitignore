@@ -17,3 +17,4 @@ ml/data/negative/esc50/
 ml/background/
 ml/embeddings*.npz
 __pycache__/
+api/.data/

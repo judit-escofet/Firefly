@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createResampler, resample } from '../src/guardian/audio/resampler.js';
+import { createResampler, resample } from '../src/audio/resampler.js';
 import {
   createWindower,
   frameSignal,

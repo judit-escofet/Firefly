@@ -85,11 +85,10 @@ contract and `score`/`label` from P3's implementation) until the two are reconci
 | `stateMachine.js` | escalation state machine (pure, clock injected) |
 | `codePhrase.js` | fuzzy code-phrase spotting (char ratio ≥ 0.8 + word alignment of content words) |
 | `checkins.js` | long_stop / off_route from `position.updated` |
-| `audio/resampler.js` | any rate → 16 kHz, mirrored bit-exactly by `ml/resample.py` |
+| `../audio/micHub.js`, `../audio/resampler.js`, `../audio/capture-worklet.js` | **shared** mic: one capture, 16 kHz, fanned out to the scream model, clip buffer and the companion's speech-to-text (resampler mirrored bit-exactly by `ml/resample.py`) |
 | `audio/windows.js` | 0.96 s windows (hop from the head: 0.24 s), head scoring (logistic / context / MLP), k-of-n trigger rule |
-| `audio/micSession.js` | opens mic + AudioContext synchronously inside the tap (iOS); test-file input |
 | `audio/backend.js` | picks the fastest TF.js backend (WASM / WebGL) on this device |
-| `audio/yamnet.js`, `audio/detector.js`, `audio/capture-worklet.js` | mic → YAMNet → score |
+| `audio/yamnet.js`, `audio/detector.js` | shared mic → YAMNet → score |
 | `audio/clipBuffer.js` | rolling 15 s buffer + WAV encoder |
 | `scoreLog.js` | score batches every 30 s → `/scores` |
 | `mock.js`, `overlay.js` | `?mock=1` panel, `?debug=1` overlay |

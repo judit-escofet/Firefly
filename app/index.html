@@ -2,26 +2,100 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#07130f" />
     <title>Firefly</title>
+    <!-- TEMPORARY demo shell (P1 + P2 working together) until P4's React app lands.
+         P4: replace this page; keep calling startGuardian() + startCompanion() once at boot and
+         emit walk.started synchronously inside the "Walk with me" tap. -->
+    <style>
+      :root {
+        --bg: #07130f; --bg2: #0d2019; --card: rgba(255, 255, 255, 0.06); --fg: #eaf2ec; --muted: #9db3a6;
+        --gold: #ffcf5c; --gold-glow: rgba(255, 207, 92, 0.55); --line: rgba(255, 255, 255, 0.12);
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at top, var(--bg2), var(--bg) 70%); color: var(--fg);
+        font: 16px/1.45 system-ui, -apple-system, sans-serif; }
+      main { max-width: 520px; margin: 0 auto; padding: 20px 16px 120px; }
+      h1 { font-size: 22px; margin: 0; letter-spacing: 0.3px; }
+      .muted { color: var(--muted); font-size: 13px; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-top: 14px; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      button { font: inherit; border: 0; border-radius: 12px; padding: 12px 16px; cursor: pointer; background: var(--card); color: var(--fg); border: 1px solid var(--line); }
+      button.primary { background: var(--gold); color: #1b1300; font-weight: 700; border: 0; font-size: 18px; padding: 16px; width: 100%; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      #orb { width: 84px; height: 84px; border-radius: 50%; margin: 18px auto 6px; background: radial-gradient(circle at 40% 35%, #fff6cf, var(--gold) 45%, #8a5d00 100%);
+        box-shadow: 0 0 18px var(--gold-glow); opacity: 0.55; transition: opacity 0.3s, box-shadow 0.3s, transform 0.3s; }
+      #orb.on { opacity: 1; box-shadow: 0 0 46px 14px var(--gold-glow); transform: scale(1.06); }
+      #orbLabel { text-align: center; }
+      #transcript { max-height: 38vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+      .msg { padding: 8px 12px; border-radius: 14px; max-width: 85%; }
+      .msg.her { align-self: flex-end; background: rgba(140, 200, 255, 0.16); }
+      .msg.her.partial { opacity: 0.6; font-style: italic; }
+      .msg.ff { align-self: flex-start; background: rgba(255, 207, 92, 0.15); }
+      .msg.sys { align-self: center; font-size: 12px; color: var(--muted); }
+      .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 13px; }
+      .stats b { font-weight: 600; color: var(--muted); }
+      #pinOverlay { position: fixed; inset: 0; background: rgba(4, 8, 6, 0.96); display: none; align-items: center; justify-content: center; z-index: 50; }
+      #pinOverlay.show { display: flex; }
+      .pin { width: min(320px, 90vw); text-align: center; }
+      .dots { font-size: 28px; letter-spacing: 12px; min-height: 40px; margin: 10px 0 16px; }
+      .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .pad button { font-size: 22px; padding: 16px 0; }
+      #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--line); padding: 10px 16px; border-radius: 12px; display: none; z-index: 60; }
+      @media (prefers-color-scheme: light) { :root { --bg: #eef4ef; --bg2: #ffffff; --card: rgba(0,0,0,0.04); --fg: #10221a; --muted: #4f6a5c; --line: rgba(0,0,0,0.1); } }
+    </style>
   </head>
-  <body style="font-family: system-ui, sans-serif; margin: 16px">
-    <!-- Placeholder shell so the Guardian can run on its own. P4: replace with the React app and
-         call startGuardian() once at boot (see src/guardian/README.md). -->
-    <h1>Firefly</h1>
-    <p>Placeholder shell. Try <a href="?mock=1&mic=0">?mock=1&amp;mic=0</a> (mock panel, no mic),
-       <a href="?mock=1&debug=1">?mock=1&amp;debug=1</a> (mock panel + live mic: "Start walk", then play a scream),
-       or the <a href="/guardian-test.html">Guardian test page</a>.</p>
-    <pre id="log" style="font-size: 12px; white-space: pre-wrap"></pre>
-    <script type="module">
-      import { on } from '/src/bus.js';
-      import { startGuardian } from '/src/guardian/index.js';
-      const log = document.getElementById('log');
-      on('*', (e) => {
-        if (e.type === 'guardian.score') return;
-        log.textContent = `${e.ts.slice(11, 19)} ${e.type} ${JSON.stringify({ ...e, type: undefined, ts: undefined })}\n` + log.textContent;
-      });
-      startGuardian();
-    </script>
+  <body>
+    <main>
+      <h1>✨ Firefly</h1>
+      <div class="muted">Walk home with a friend. <span id="modeNote"></span></div>
+
+      <div id="orb"></div>
+      <div id="orbLabel" class="muted">firefly is quiet</div>
+
+      <div class="card">
+        <button id="walk" class="primary">Walk with me</button>
+        <div class="row" style="margin-top: 10px">
+          <button id="walkFile" title="Plays a recorded voice into the mic pipeline (no microphone needed)">Walk with test audio ▶</button>
+          <button id="end" disabled>I'm home</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="muted" style="margin-bottom: 8px">Conversation</div>
+        <div id="transcript"><div class="msg sys">Tap “Walk with me” and say hi.</div></div>
+      </div>
+
+      <div class="card">
+        <div class="muted" style="margin-bottom: 8px">Simulated walk</div>
+        <div class="row">
+          <button data-sim="pause">Stop here</button>
+          <button data-sim="wander">Wander off</button>
+          <button data-sim="jump">Jump ahead</button>
+        </div>
+        <div class="stats" style="margin-top: 10px">
+          <div><b>Remaining</b> <span id="remaining">–</span></div><div><b>ETA</b> <span id="eta">–</span></div>
+          <div><b>Guardian</b> <span id="gstate">idle</span></div><div><b>Scream score</b> <span id="score">–</span></div>
+          <div><b>Listening</b> <span id="stt">off</span></div><div><b>Reply time</b> <span id="lat">–</span></div>
+        </div>
+      </div>
+
+      <div class="card muted" style="font-size: 12px">
+        Demo PINs: cancel <b>1234</b>, duress <b>9999</b> (change with localStorage <code>firefly.pin</code> / <code>firefly.duress_pin</code>).
+        Other pages: <a href="?mock=1">mock mode</a> · <a href="/guardian-test.html">Guardian test</a>.
+      </div>
+    </main>
+
+    <div id="pinOverlay">
+      <div class="pin">
+        <div class="muted">Enter your PIN to continue</div>
+        <div class="dots" id="dots"></div>
+        <div class="pad" id="pad"></div>
+      </div>
+    </div>
+    <div id="toast"></div>
+
+    <script type="module" src="/src/demo/shell.js"></script>
   </body>
 </html>

@@ -62,6 +62,8 @@ export function mountMock({ guardian } = {}) {
     grid.appendChild(b);
   }
   panel.querySelector('.hd').onclick = () => panel.classList.toggle('min');
+  // On phones the panel would cover the app's own buttons: start collapsed (tap the header).
+  if (globalThis.innerWidth < 700) panel.classList.add('min');
   document.body.appendChild(panel);
 
   bus.on('alert.state', (e) => {

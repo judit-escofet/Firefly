@@ -2,7 +2,7 @@
 
 import { startScreamDetector } from './audio/detector.js';
 import { loadYamnetFastest } from './audio/backend.js';
-import { beginMicSession, beginFileSession } from './audio/micSession.js';
+import { acquireMic } from '../audio/micHub.js';
 import { parseWav, embedClip, compareEmbeddings, maxAbsDiff } from './audio/parity.js';
 import { loadHead } from './audio/detector.js';
 
@@ -22,14 +22,17 @@ fetch('/models/yamnet/yamnet_class_map.csv')
 
 let fileRun = null; // {startedAt, onset} while the test scream plays
 
-$('start').onclick = () => start(beginMicSession()); // session opened inside the tap (iOS)
+let pageMic = null; // this page's reference to the shared mic hub
+
+// acquireMic() runs synchronously inside the tap, before any await (iOS requirement).
+$('start').onclick = () => start(acquireMic());
 
 $('playScream').onclick = async () => {
-  const session = beginFileSession('/parity/scream_test.wav'); // inside the tap, before any await
+  const mic = acquireMic({ file: '/parity/scream_test.wav' }); // same path as the mic, file as input
   const meta = await fetch('/parity/scream_test.json').then((r) => r.json());
-  await start(session);
+  await start(mic);
   if (!det) return;
-  const { startedAt, duration } = await session.start();
+  const { startedAt, duration } = await mic.startFile();
   fileRun = { startedAt, onset: meta.onset_s, triggeredAt: null };
   $('log').textContent = `${new Date().toLocaleTimeString()}  playing test scream (onset at ${meta.onset_s} s): ${meta.scream}\n` + $('log').textContent;
   setTimeout(() => {
@@ -40,14 +43,15 @@ $('playScream').onclick = async () => {
   }, (duration + 1) * 1000);
 };
 
-async function start(session) {
+async function start(mic) {
   if (det) await det.stop();
   det = null;
+  if (pageMic && pageMic !== mic) pageMic.release();
+  pageMic = mic;
   $('start').disabled = true;
   $('status').textContent = 'loading YAMNet + mic…';
   try {
     det = await startScreamDetector({
-      session,
       useHead: $('useHead').checked,
       onScore,
       onTrigger,
@@ -69,6 +73,8 @@ async function start(session) {
 $('stop').onclick = async () => {
   await det?.stop();
   det = null;
+  pageMic?.release();
+  pageMic = null;
   $('start').disabled = false;
   $('stop').disabled = true;
   $('status').textContent = 'stopped';

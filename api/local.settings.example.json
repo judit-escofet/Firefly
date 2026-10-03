@@ -11,6 +11,10 @@
     "WEBPUBSUB_HUB": "firefly",
     "TWILIO_ACCOUNT_SID": "",
     "TWILIO_AUTH_TOKEN": "",
-    "TWILIO_FROM_NUMBER": ""
+    "TWILIO_FROM_NUMBER": "",
+    "GEMINI_API_KEY": "",
+    "GEMINI_MODEL": "",
+    "ELEVENLABS_API_KEY": "",
+    "ELEVENLABS_VOICE_ID": ""
   }
 }
