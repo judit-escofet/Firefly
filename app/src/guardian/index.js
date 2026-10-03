@@ -23,6 +23,7 @@ export function startGuardian({
   mic = new URLSearchParams(globalThis.location?.search ?? '').get('mic') !== '0',
   debug = new URLSearchParams(globalThis.location?.search ?? '').get('debug') === '1',
   clock = realClock,
+  mockPanel = true, // the app shell can provide its own presenter controls instead
 } = {}) {
   if (instance) return instance;
 
@@ -169,7 +170,7 @@ export function startGuardian({
     },
   };
 
-  if (mock) import('./mock.js').then((m) => m.mountMock({ guardian: instance }));
+  if (mock && mockPanel) import('./mock.js').then((m) => m.mountMock({ guardian: instance }));
   if (debug) import('./overlay.js').then((m) => m.mountOverlay({ guardian: instance }));
   bus.emit('alert.state', { state: sm.state, seconds_left: null });
   return instance;

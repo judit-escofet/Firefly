@@ -10,8 +10,9 @@ export function mountCompanionMock() {
   box.id = 'firefly-companion-mock';
   box.innerHTML = `
     <style>
-      #firefly-companion-mock{position:fixed;left:12px;bottom:12px;z-index:99999;display:flex;gap:6px;
+      #firefly-companion-mock{position:fixed;left:12px;bottom:96px;z-index:45;display:none;gap:6px;
         background:rgba(20,20,30,.92);padding:8px;border-radius:10px;font:13px system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.4)}
+      #firefly-companion-mock.on{display:flex}
       #firefly-companion-mock input{width:min(52vw,260px);padding:6px 8px;border-radius:6px;border:0;font:inherit}
       #firefly-companion-mock button{padding:6px 10px;border:0;border-radius:6px;background:#ffcf5c;font:inherit;font-weight:600;cursor:pointer}
     </style>
@@ -33,4 +34,7 @@ export function mountCompanionMock() {
     });
   };
   document.body.appendChild(box);
+  // Only during a walk (that's when there's someone to talk to), above the walk screen's buttons.
+  bus.on('walk.started', () => box.classList.add('on'));
+  bus.on('walk.ended', () => box.classList.remove('on'));
 }

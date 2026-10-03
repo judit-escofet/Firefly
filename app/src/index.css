@@ -1,0 +1,140 @@
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  /* Rich, luminous twilight indigo-plum background - NOT BLACK! */
+  background-color: #151a3d;
+  color: #f1f5f9;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow-x: hidden;
+}
+
+/* Custom Mythical Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(21, 26, 61, 0.7);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(250, 204, 21, 0.6);
+}
+
+/* Mythical Glassmorphism Panels (Dear Future Manager aesthetic with rich violet/indigo undertones) */
+.glass-mythic {
+  background: rgba(30, 25, 65, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(233, 213, 255, 0.18);
+  box-shadow: 0 12px 35px -5px rgba(12, 10, 35, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+.glass-mythic-card {
+  background: linear-gradient(145deg, rgba(45, 25, 85, 0.72) 0%, rgba(20, 28, 65, 0.8) 100%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(250, 204, 21, 0.25);
+  box-shadow: 0 10px 30px rgba(14, 12, 40, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.glass-mythic-subtle {
+  background: rgba(24, 28, 68, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(167, 243, 208, 0.18);
+  box-shadow: 0 6px 20px rgba(10, 12, 35, 0.35);
+}
+
+/* Calm deep-green glass (countdown screen, demo drawer, firefly speech bubble) */
+.glass-grove {
+  background: rgba(12, 32, 26, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(111, 191, 133, 0.22);
+  box-shadow: 0 10px 30px rgba(3, 12, 9, 0.5);
+}
+
+/* Luminous Mythical Portal Ring */
+.mythic-portal {
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.28) 0%, rgba(36, 20, 64, 0.65) 70%, rgba(15, 26, 60, 0.85) 100%);
+  box-shadow: 0 0 50px rgba(124, 58, 237, 0.4), inset 0 0 35px rgba(250, 204, 21, 0.25);
+  border: 1.5px solid rgba(250, 204, 21, 0.35);
+}
+
+/* Shimmering Metallic Gold Text */
+.text-gold-metallic {
+  background: linear-gradient(135deg, #fff7c2 0%, #fde047 30%, #eab308 70%, #ca8a04 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(250, 204, 21, 0.3));
+}
+
+.text-ethereal-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 40%, #fbcfe8 75%, #fde68a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Shimmering Metallic Gold Button */
+.btn-gold-metallic {
+  background: linear-gradient(135deg, #fff394 0%, #facc15 35%, #eab308 70%, #d97706 100%);
+  box-shadow: 0 0 25px rgba(250, 204, 21, 0.5), 0 4px 15px rgba(0, 0, 0, 0.3);
+  color: #1e1338;
+}
+
+.btn-gold-metallic:hover {
+  box-shadow: 0 0 35px rgba(250, 204, 21, 0.75), 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Leaflet Dark Twilight Overrides */
+.leaflet-container {
+  background-color: #101533 !important;
+  font-family: inherit !important;
+}
+
+/* Azure Maps road tiles are light: invert into a night palette. The Esri fallback is already dark. */
+.tiles-azure .leaflet-tile {
+  filter: invert(1) hue-rotate(185deg) brightness(0.62) contrast(1.15) saturate(0.55);
+}
+.tiles-dark .leaflet-tile {
+  filter: brightness(1.05) sepia(0.25) hue-rotate(110deg) saturate(1.2);
+}
+
+/* Ethereal Glow */
+.glow-firefly {
+  box-shadow: 0 0 22px rgba(250, 204, 21, 0.45), 0 0 50px rgba(250, 204, 21, 0.25);
+}
+
+.glow-firefly-active {
+  box-shadow: 0 0 35px rgba(250, 204, 21, 0.8), 0 0 70px rgba(168, 85, 247, 0.4);
+  animation: fireflyPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes fireflyPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 14px rgba(250, 204, 21, 0.7));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 30px rgba(250, 204, 21, 1));
+  }
+}
