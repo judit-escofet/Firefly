@@ -44,9 +44,11 @@ export async function embedClip(infer, samples, sampleRate, head = null) {
   for (const f of frames) {
     const { embedding, classScores } = await infer(f);
     const y = yamnetOnlyScore(classScores);
+    const n = out.embeddings.length;
+    const prev = Array.from({ length: head?.context ?? 0 }, (_, k) => out.embeddings[Math.max(0, n - 1 - k)] ?? Array.from(embedding));
     out.embeddings.push(Array.from(embedding));
     out.yamnetScores.push(y);
-    out.headScores.push(head ? headScore(head, embedding, y, classScores) : null);
+    out.headScores.push(head ? headScore(head, embedding, y, classScores, prev) : null);
   }
   return out;
 }

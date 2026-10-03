@@ -19,7 +19,9 @@
   Test is touched once, after everything is fixed.
 """
 import argparse
+import csv
 import json
+import re
 import time
 from collections import Counter
 from pathlib import Path
@@ -97,10 +99,60 @@ def interleave(a, b):
     return out
 
 
-def features(D, kind):
-    if kind == "embedding":
-        return D["X"]
-    return np.hstack([D["X"], logit_scores(D["S"]).astype(np.float32)])
+SCREAM_WORDS = re.compile(
+    r"scream|shriek|screech|yell|shout|cry|crying|help|horror|terror|terrif|fear|scared|scary|frighten|panic|"
+    r"agony|pain|grito|schrei|aaa+h*|ahh+",
+    re.I,
+)
+RIDE_WORDS = re.compile(r"coaster|rollercoaster|ride|amusement", re.I)
+
+
+def clean_positive_mask(d):
+    """True for positive clips whose own metadata corroborates a (non-ride) scream.
+    FSD50K labels a whole clip even when the scream is a tiny part of a long field recording
+    (e.g. a beer-clink recording labelled "Screaming"). Decided from title/tags only, never from
+    model scores, and applied identically to every split. Team recordings are always kept."""
+    attr = {r["file"]: r for r in csv.DictReader(open(ROOT / "data" / "ATTRIBUTION.csv"))}
+    keep = np.ones(len(d["clip_label"]), bool)
+    for c, (path, label) in enumerate(zip(d["clip_path"], d["clip_label"])):
+        if label != 1:
+            continue
+        a = attr.get(str(path).split("#")[0])
+        if a is None:
+            continue  # team recording
+        text = f"{a['title']} {a.get('category', '')}"
+        meta_tags = TAGS.get(a["freesound_id"], "")
+        text = f"{text} {meta_tags}"
+        keep[c] = bool(SCREAM_WORDS.search(text)) and not RIDE_WORDS.search(text)
+    return keep
+
+
+def _load_tags():
+    tags = {}
+    for split in ("dev", "eval"):
+        f = ROOT / "raw" / f"FSD50K.metadata/{split}_clips_info_FSD50K.json"
+        if f.exists():
+            for k, v in json.load(open(f)).items():
+                tags[k] = " ".join(v.get("tags", []))
+    return tags
+
+
+TAGS = _load_tags()
+
+
+def features(D, kind, context=0, rows=None):
+    """Feature rows for windows `rows` (bool mask). With context=N, the embeddings of the previous
+    N windows of the SAME grid (0.48 s apart, ~1 s of history) are appended; at a clip's start
+    the clip's first window is repeated (rows are stored clip by clip, window by window)."""
+    idx = np.flatnonzero(rows) if rows is not None else np.arange(len(D["X"]))
+    base = D["X"][idx] if kind == "embedding" else np.hstack([D["X"][idx], logit_scores(D["S"][idx]).astype(np.float32)])
+    if context == 0:
+        return base
+    win = D["window"][idx]
+    parts = [base]
+    for k in range(1, context + 1):
+        parts.append(D["X"][idx - np.minimum(win, k)])
+    return np.hstack(parts)
 
 
 def main():
@@ -119,6 +171,9 @@ def main():
                     help="classifier architecture: logistic regression or MLP")
     ap.add_argument("--mlp-hidden", type=int, nargs="+", default=[128],
                     help="hidden layer sizes for MLP (default: 128)")
+    ap.add_argument("--context", type=int, default=0, help="also feed the previous N windows' embeddings (0.48 s apart)")
+    ap.add_argument("--clean-positives", action="store_true",
+                    help="drop positive clips whose title/tags don't mention a scream (FSD50K label noise)")
     ap.add_argument("--hard-neg-weight", type=float, default=1.0,
                     help="sample weight multiplier for hard-negative categories (crowds, cheering, etc.)")
     args = ap.parse_args()
@@ -132,7 +187,14 @@ def main():
         assert (p["clip_path"] == d["clip_path"]).all(), "offset embeddings must come from the same clip list"
     clip_label, clip_group, clip_cat = d["clip_label"], d["clip_group"], d["clip_category"]
     aug_of = d["clip_aug_of"] if "clip_aug_of" in d.files else np.full(len(clip_label), -1)
-    orig = np.flatnonzero(aug_of < 0)
+    usable = np.ones(len(clip_label), bool)
+    if args.clean_positives:
+        usable = clean_positive_mask(d)
+        src_ok = usable.copy()
+        usable[aug_of >= 0] = src_ok[aug_of[aug_of >= 0]]  # copies follow their source
+        dropped = [str(p) for p, u, a in zip(d["clip_path"], usable, aug_of) if not u and a < 0]
+        print(f"clean-positives: dropped {len(dropped)} positive clips without scream metadata")
+    orig = np.flatnonzero((aug_of < 0) & usable)
     print(f"{len(orig)} clips ({clip_label[orig].sum()} positive), {(aug_of >= 0).sum()} noisy copies, "
           f"{len(set(clip_group[orig]))} groups, {len(phases)} window phase(s)")
 
@@ -140,7 +202,7 @@ def main():
     train_c, val_c, test_c = orig[o_tr], orig[o_va], orig[o_te]
     for a, b in ((train_c, test_c), (val_c, test_c), (train_c, val_c)):
         assert not (set(clip_group[a]) & set(clip_group[b])), "group leak between splits"
-    train_aug = np.array([c for c in np.flatnonzero(aug_of >= 0) if aug_of[c] in set(train_c)], dtype=int)
+    train_aug = np.array([c for c in np.flatnonzero((aug_of >= 0) & usable) if aug_of[c] in set(train_c)], dtype=int)
     train_all = np.concatenate([train_c, train_aug]) if args.augment else train_c
 
     # Training windows (all phases): every negative window; for positives only the windows that
@@ -155,7 +217,7 @@ def main():
         loud_keys = set((clip[orig_loud].astype(np.int64) * 100000 + win[orig_loud]).tolist())
         loud = np.fromiter(((k in loud_keys) for k in (src * 100000 + win).tolist()), bool, len(clip))
         m = np.isin(clip, train_all) & ((clip_label[clip] == 0) | loud)
-        Xs.append(features(D, args.features)[m])
+        Xs.append(features(D, args.features, args.context, m))
         ys.append(clip_label[clip[m]])
         cats.append(clip_cat[clip[m]])
     Xtr, ytr, ctr = np.vstack(Xs), np.concatenate(ys), np.concatenate(cats)
@@ -178,7 +240,7 @@ def main():
         per_phase = []
         for D in phases[: 2 if args.hop == 0.24 else 1]:
             m = np.isin(D["clip"], clips)
-            p = model_p(features(D, args.features)[m])
+            p = model_p(features(D, args.features, args.context, m))
             fused = np.sqrt(p * D["yamnet_score"][m])
             per_phase.append(dict(zip(clips, clip_scores(fused, D["clip"][m], clips))))
         if args.hop == 0.24:
@@ -246,6 +308,21 @@ def main():
         model_desc = f"yamnet {args.features} + mlp {list(hidden)}, fused with yamnet scream score"
 
     R = (rule_k, rule_n)
+    # Validation matched-recall table: the fair way to compare models (same recall → FA/h).
+    vneg = [c for c in val_c if clip_label[c] == 0]
+    vneg_s = [s for c, s in zip(val_c, val_per_clip) if clip_label[c] == 0]
+    table = []
+    for target in (0.60, 0.65, 0.70, 0.75, 0.80):
+        ok_t = [t for t in np.arange(0.995, 0.05, -0.005) if clip_metrics(val_per_clip, clip_label[val_c], t, *R)["recall"] >= target]
+        if not ok_t:
+            table.append(f"{target:.2f}: n/a")
+            continue
+        t = ok_t[0]
+        fw = stream_fa(vneg_s, vneg, clip_cat, t, False, *R, args.hop)[0]
+        fh = stream_fa(vneg_s, vneg, clip_cat, t, True, *R, args.hop)[0]
+        table.append(f"{target:.2f}: {fw:.1f}/{fh:.0f}")
+    print("VAL matched recall → everyday/hard FA per h | " + " | ".join(table))
+
     # Threshold under a false-alarm budget on validation walk-like negatives.
     val_neg = [c for c in val_c if clip_label[c] == 0]
     val_neg_scores = [s for c, s in zip(val_c, val_per_clip) if clip_label[c] == 0]

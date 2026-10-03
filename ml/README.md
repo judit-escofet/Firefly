@@ -63,53 +63,68 @@ and the timestamp of every background false alarm so you can listen back).
 
 ## Results so far (public data only, 2026-10-03)
 
-Test set: 59 scream clips + 908 negative clips, held out by uploader. Background: 5.38 h never
-used in training (4.21 h everyday sounds + 1.17 h crowds/cheering/laughter/playful screams).
+Test set: 59 scream clips + 908 negative clips, held out by uploader (fixed; never used for
+any choice). Background: 5.38 h never used in training (4.21 h everyday sounds + 1.17 h
+crowds/cheering/laughter/playful screams).
 
-| | **Current model** | Previous (0.48 s hop) | YAMNet-only (spec stage A) | Target |
+| | **Current model** | Previous (thr 0.40, no context) | YAMNet-only (spec stage A) | Target |
 | --- | --- | --- | --- | --- |
-| Recall (test clips) | **0.71** | 0.59 | 0.29 | ≥ 0.85 (G3) ❌ |
-| Precision (test clips) | 0.58 | 0.63 | 0.85 | |
-| False alarms / h, all background | 10.4 | 6.1 | 0.37 | ≤ 1 (G4) ❌ |
-| … everyday sounds | 6.4 | 3.6 | 0.48 | |
-| … crowds / cheering / playful screams | 24.7 | 15.3 | 0.0 | |
-| Scream → trigger (test scream, 8 window alignments) | **1.8–1.9 s, 8/8 caught** | 1.9–5 s, 6/8 caught | | < 2 s (G6) |
+| Recall (test clips) | **0.64** | 0.71 | 0.29 | ≥ 0.85 (G3) ❌ |
+| Precision (test clips) | 0.63 | 0.58 | 0.85 | |
+| False alarms / h, all background | **3.2** | 10.4 | 0.37 | ≤ 1 (G4) ❌ |
+| … everyday sounds | 2.9 | 6.4 | 0.48 | |
+| … crowds / cheering / playful screams | 4.3 | 24.7 | 0.0 | |
+| Cross-validated prediction (recall / everyday FA/h) | 0.60 / 2.9 | — | | matches test + background ✅ |
 
-Current model = `scream_head.json`: YAMNet embedding → logistic regression (trained with
-3 noisy outdoor copies of every scream), fused with YAMNet's own scream score
-(`sqrt(p × yamnet)`), evaluated every **0.24 s**, trigger when **2 of the last 3** windows ≥ 0.40.
+**Current model** (`scream_head.json`): YAMNet embedding of the current window **plus the two
+previous windows** (~1 s of context) → logistic regression (trained with 3 noisy outdoor
+copies of every scream), fused with YAMNet's own scream score (`sqrt(p × yamnet)`), every
+0.24 s, trigger when 2 of the last 3 windows ≥ 0.495. Operating point "Balanced" (team choice):
+~3 false countdowns per hour of everyday sounds.
 
-What we learned (all choices made on the validation split, never on test or background):
+### How it was chosen (and why earlier numbers moved around)
 
-1. **Plain logistic regression at 90 % recall**: 68.7 false alarms/h. Unusable.
-2. **Fusing with YAMNet's scream score** halved everyday false alarms at the same recall.
-3. **0.24 s hop instead of 0.48 s** was the biggest win: at 0.48 s a 1 s scream only covers
-   about two windows, so whether "2 of 3" fires depended on where the windows happened to fall
-   (a clear test scream was missed at 2 of 8 alignments, and detection took up to 5 s).
-   At 0.24 s it is caught at every alignment within ~1.9 s. Validation recall 0.57 → 0.73.
-   Costs 2× inference, which is fine at ~7–12 ms per window on WASM.
-4. No measurable gain from: hard-negative weighting, stricter positive windows, a small MLP,
-   adding YAMNet's 521 class scores as features, other k-of-n rules, noise augmentation
-   (kept anyway; it's cheap and aimed at outdoor conditions).
-5. The validation false-alarm estimate (1.2 h) was optimistic: ≤ 1/h there became 6.4/h
-   on the 4.2 h everyday background. Distress vs playful screams/cheering stays hard from 1 s.
+The first versions picked settings on a single 16 % validation split (44 screams, 1.2 h of
+negatives). That turned out to be pure noise: dropping 2 clips reshuffled it and recall at
+the false-alarm budget jumped from 0.75 to 0.35, and a threshold that looked like 0.8 false
+alarms/h there gave 6.4/h on the background. **`cv.py` replaces it with 5-fold grouped
+cross-validation** on everything except the fixed test split (269 screams, 5.8 h everyday +
+1.3 h hard negatives, every clip scored by a model that never saw its uploader). Its estimates
+now match the test set and the background (above).
 
-**What would move the numbers next:**
-- **Team recordings.** FSD50K screams are acted, often distant or clipped; a real scream near
-  the phone (G6) is louder and cleaner. Put them in `data/positive/team/<person>-<session>/`.
-- **Calibrate on real walks, not on the test set.** Record a few ordinary walks (≥ 30 min,
-  separate from the 60 min used for G4), put them in `background/`, and pick the threshold
-  from those runs: `false_alarms.py --threshold 0.5` etc. Raising the threshold trades recall
-  for fewer false alarms; every alert still has the 10 s cancel window.
-- Without retraining: `?threshold=0.5` in the URL or `localStorage["firefly.scream_threshold"]`.
+Under cross-validation, at equal recall (everyday / hard false alarms per hour):
+
+| Recall | no context | **+ 2 windows context** | + context + MLP |
+| --- | --- | --- | --- |
+| 0.65 | 4.3 / 62 | **3.9 / 64** | 3.6 / 56 |
+| 0.70 | 6.5 / 83 | **5.7 / 80** | 5.8 / 86 |
+| 0.75 | 10.3 / 122 | **8.9 / 111** | 8.1 / 101 |
+| 0.80 | 14.8 / 164 | **12.7 / 156** | 12.5 / 152 |
+
+- Kept: 0.24 s hop (biggest single win: screams caught regardless of window alignment),
+  fusion with YAMNet's score (without it: 83 everyday false alarms/h), 2 windows of context
+  (10–15 % fewer false alarms at equal recall).
+- No real gain: regularisation strength, YAMNet class scores as features, hard-negative
+  weighting, noise augmentation, other fusion weights; an MLP helps a little only at very
+  high recall and is 100× bigger, so it stays optional (`train.py --model mlp`).
+- **Operating points** (cross-validated, current model): ≤1 everyday false alarm/h →
+  recall 0.47 (thr 0.59) · ≤2/h → 0.54 (0.54) · **≤3/h → 0.60 (0.495, shipped)** ·
+  ≤5/h → 0.67 (0.42). Change in the browser with `?threshold=` or
+  `localStorage["firefly.scream_threshold"]`.
+- The test scream (`app/public/parity/scream_test.wav`) triggers 1.8–1.9 s after onset at
+  6 of 8 window alignments with this threshold (all 8 at 0.40); it is a borderline clip.
+
+**What would move the numbers next:** team recordings of real screams near the phone
+(`data/positive/team/<person>-<session>/`) and real walks for calibration. Re-run cv.py with
+them: everything above is about acted, often distant internet screams.
 
 To reproduce the current model:
 
 ```bash
 ml/.venv/bin/python ml/embed.py --in ml/data --out ml/embeddings_v2.npz --augment 3
 ml/.venv/bin/python ml/embed.py --in ml/data --out ml/embeddings_v2_off.npz --augment 3 --offset 3840
-ml/.venv/bin/python ml/train.py --embeddings ml/embeddings_v2.npz --embeddings-offset ml/embeddings_v2_off.npz \
-    --hop 0.24 --rule 2/3 --augment
+ml/.venv/bin/python ml/cv.py --augment --context 2                         # compare settings
+ml/.venv/bin/python ml/cv.py --augment --context 2 --fa-budget 3 --export  # train, test once, write head
 ml/.venv/bin/python ml/false_alarms.py
 ```
 

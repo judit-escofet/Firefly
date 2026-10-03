@@ -72,12 +72,23 @@ def main():
         x16 = to_16k(x, sr)
         hop = head.get("hop_samples", HOP)
         k, n = head.get("rule_k", 2), head.get("rule_n", 3)
-        scores, emb = stream_scores(x16, hop)
-        ys = yamnet_only_score(scores)
-        hs = head_score(head, emb, ys, scores)
+        # Score each 0.48 s grid on its own (context = previous windows of the same grid), then
+        # interleave the two grids for the 0.24 s hop — same as the browser.
+        grids = [stream_scores(x16)] + ([stream_scores(x16[HOP // 2 :])] if hop == HOP // 2 else [])
+        per_grid = []
+        for s_g, e_g in grids:
+            y_g = yamnet_only_score(s_g)
+            per_grid.append((head_score(head, e_g, y_g, s_g), y_g))
+        if len(per_grid) == 2:
+            m = min(len(per_grid[0][0]), len(per_grid[1][0]))
+            hs = np.empty(2 * m)
+            hs[0::2], hs[1::2] = per_grid[0][0][:m], per_grid[1][0][:m]
+        else:
+            hs = per_grid[0][0]
+        ys = per_grid[0][1]
         th = count_triggers(hs, thr, k, n)
         # baseline: YAMNet-only exactly as the spec's stage A (0.48 s hop, 2 of 3)
-        ty = count_triggers(ys if hop == HOP else ys[0::2], YAMNET_ONLY_THRESHOLD)
+        ty = count_triggers(ys, YAMNET_ONLY_THRESHOLD)
         secs = len(x16) / 16000
         total_s += secs
         n_head += len(th)

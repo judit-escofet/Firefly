@@ -112,6 +112,20 @@ describe('scoring + trigger rule', () => {
     expect(() => validateHead({ ...head, weights: new Array(1024).fill(0) })).toThrow();
   });
 
+  it('context head: weights = [current 1024 | 0.48 s ago 1024 | 0.96 s ago 1024]', () => {
+    const weights = new Array(3 * 1024).fill(0);
+    weights[0] = 1; // current e[0]
+    weights[1024] = 2; // previous e[0]
+    weights[2048] = -1; // two back e[0]
+    const head = validateHead({ weights, bias: 0, threshold: 0.5, context: 2 });
+    const e = (v) => Object.assign(new Array(1024).fill(0), { 0: v });
+    const z = 1 * 0.3 + 2 * 0.2 - 1 * 0.1;
+    expect(headScore(head, e(0.3), 0, [], [e(0.2), e(0.1)])).toBeCloseTo(1 / (1 + Math.exp(-z)), 12);
+    // stream start: missing history clamps to the earliest available window
+    expect(headScore(head, e(0.3), 0, [], [e(0.2)])).toBeCloseTo(1 / (1 + Math.exp(-(0.3 + 0.4 - 0.2))), 12);
+    expect(() => validateHead({ ...head, weights: new Array(1024).fill(0) })).toThrow();
+  });
+
   it('MLP head: relu hidden layer, linear output, sigmoid, then fusion', () => {
     // 1024 → 2 (relu) → 1. Hidden unit 0 sees e[0], unit 1 sees −e[0]; output = h0 + h1 − 1.
     const w0 = new Array(2 * 1024).fill(0);

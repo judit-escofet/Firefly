@@ -54,7 +54,9 @@ export function yamnetOnlyScore(classScores) {
 //   "screaming but also cheering/laughing → not distress".
 // fusion "geomean_yamnet": score = sqrt(sigmoid(w·x + b) × YAMNet scream score) — the classifier
 //   only fires when YAMNet also hears something scream-like.
-export function headScore(head, embedding, yamnetScore, classScores) {
+// context N: `prev` = embeddings of the previous N windows of the same 0.48 s grid (prev[0] =
+//   0.48 s ago), appended after the other features — see ml/train.py features().
+export function headScore(head, embedding, yamnetScore, classScores, prev = []) {
   if (head.model_type === 'mlp') {
     // Build input vector: embedding, optionally with logit_scores appended
     let x = new Float64Array(embedding.length + (head.features === 'embedding+logit_scores' ? 521 : 0));
@@ -81,11 +83,17 @@ export function headScore(head, embedding, yamnetScore, classScores) {
   }
   let z = head.bias;
   for (let i = 0; i < 1024; i++) z += head.weights[i] * embedding[i];
+  let o = 1024;
   if (head.features === 'embedding+logit_scores') {
     for (let j = 0; j < 521; j++) {
       const p = Math.min(1 - 1e-4, Math.max(1e-4, classScores[j]));
-      z += head.weights[1024 + j] * Math.log(p / (1 - p));
+      z += head.weights[o + j] * Math.log(p / (1 - p));
     }
+    o += 521;
+  }
+  for (let k = 0; k < (head.context ?? 0); k++, o += 1024) {
+    const e = prev[k] ?? prev[prev.length - 1] ?? embedding; // clamp at stream start
+    for (let i = 0; i < 1024; i++) z += head.weights[o + i] * e[i];
   }
   const p = 1 / (1 + Math.exp(-z));
   return head.fusion === 'geomean_yamnet' ? Math.sqrt(p * yamnetScore) : p;
@@ -106,7 +114,7 @@ export function validateHead(head) {
         throw new Error(`layer ${l}: bias must be ${layer.out_features} numbers`);
     }
   } else {
-    const nWeights = head?.features === 'embedding+logit_scores' ? 1024 + 521 : 1024;
+    const nWeights = (head?.features === 'embedding+logit_scores' ? 1024 + 521 : 1024) + 1024 * (head.context ?? 0);
     if (!Array.isArray(head.weights) || head.weights.length !== nWeights) throw new Error(`weights must be ${nWeights} numbers`);
     if (!Number.isFinite(head.bias)) throw new Error('bias missing');
   }
@@ -114,6 +122,9 @@ export function validateHead(head) {
   if (head.fusion !== undefined && head.fusion !== 'geomean_yamnet') throw new Error(`unknown fusion "${head.fusion}"`);
   if (head.hop_samples !== undefined && !(Number.isInteger(head.hop_samples) && head.hop_samples >= 1600 && head.hop_samples <= HOP_SAMPLES))
     throw new Error('hop_samples must be an integer between 1600 and 7680');
+  if (head.context !== undefined && !(Number.isInteger(head.context) && head.context >= 0 && head.context <= 4))
+    throw new Error('context must be an integer 0–4');
+  if (head.context && head.model_type === 'mlp') throw new Error('context is only supported for logistic heads');
   if (head.rule_k !== undefined && !(head.rule_k >= 1 && head.rule_n >= head.rule_k)) throw new Error('bad rule_k / rule_n');
   return head;
 }

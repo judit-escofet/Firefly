@@ -68,6 +68,18 @@ export async function startScreamDetector({ session, onScore, onTrigger, onAudio
   source.connect(node).connect(sink).connect(ctx.destination);
 
   const resampler = createResampler(ctx.sampleRate);
+  // Embedding history for heads with context: window i's grid-mates are i−step, i−2·step…
+  const step = Math.round(HOP_SAMPLES / hop); // 2 at the 0.24 s hop
+  const history = [];
+  const prevFor = () => {
+    const out = [];
+    for (let k = 1; k <= (head?.context ?? 0); k++) {
+      const j = history.length - 1 - k * step;
+      // clamp to the earliest window of the same grid
+      out.push(history[j >= 0 ? j : (history.length - 1) % step] ?? history[0]);
+    }
+    return out;
+  };
   let busy = false;
   let queued = null; // if inference falls behind, keep only the newest window
   const stats = { windows: 0, dropped: 0, msAvg: 0, msMax: 0, lastMs: 0 };
@@ -82,7 +94,9 @@ export async function startScreamDetector({ session, onScore, onTrigger, onAudio
     try {
       const { classScores, embedding, ms } = await yamnet.infer(window);
       const yScore = yamnetOnlyScore(classScores);
-      const score = head ? headScore(head, embedding, yScore, classScores) : yScore;
+      history.push(Float32Array.from(embedding));
+      if (history.length > 4 * step + 1) history.shift();
+      const score = head ? headScore(head, embedding, yScore, classScores, prevFor()) : yScore;
       const r = rule.push(score);
       stats.windows++;
       stats.lastMs = ms;

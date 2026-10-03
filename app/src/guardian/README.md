@@ -86,7 +86,7 @@ contract and `score`/`label` from P3's implementation) until the two are reconci
 | `codePhrase.js` | fuzzy code-phrase spotting (char ratio ≥ 0.8 + word alignment of content words) |
 | `checkins.js` | long_stop / off_route from `position.updated` |
 | `audio/resampler.js` | any rate → 16 kHz, mirrored bit-exactly by `ml/resample.py` |
-| `audio/windows.js` | 0.96 s windows (hop from the head: 0.24 s), scores, k-of-n trigger rule |
+| `audio/windows.js` | 0.96 s windows (hop from the head: 0.24 s), head scoring (logistic / context / MLP), k-of-n trigger rule |
 | `audio/micSession.js` | opens mic + AudioContext synchronously inside the tap (iOS); test-file input |
 | `audio/backend.js` | picks the fastest TF.js backend (WASM / WebGL) on this device |
 | `audio/yamnet.js`, `audio/detector.js`, `audio/capture-worklet.js` | mic → YAMNet → score |

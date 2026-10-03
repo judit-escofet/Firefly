@@ -1,14 +1,14 @@
 {
-  "model": "yamnet embedding + logistic regression, fused with yamnet scream score",
-  "threshold": 0.4,
+  "model": "yamnet embedding + 2 previous windows + logistic regression, fused with yamnet scream score",
+  "threshold": 0.495,
   "test_clips": {
     "positives": 59,
     "negatives": 908
   },
-  "precision": 0.5833,
-  "recall": 0.7119,
-  "f1": 0.6412,
-  "false_alarms_per_hour": 10.4,
+  "precision": 0.6333,
+  "recall": 0.6441,
+  "f1": 0.6387,
+  "false_alarms_per_hour": 3.157,
   "hours_of_background_audio": 5.384,
   "yamnet_only_baseline": {
     "threshold": 0.5,
@@ -18,288 +18,293 @@
     "false_alarms_per_hour": 0.371
   },
   "details": {
-    "evaluation": "per clip; a clip is detected if 2 of 3 consecutive windows (hop 0.24 s) >= threshold anywhere in it",
+    "evaluation": "per clip; detected if 2 of 3 consecutive windows (hop 0.24 s) >= threshold anywhere in it",
+    "selection": "5-fold grouped cross-validation; threshold = best CV recall with <= 3.0 everyday false alarms/h",
+    "split": "fixed 20% test split (GroupShuffleSplit by uploader, seed 42); 5-fold StratifiedGroupKFold on the rest",
+    "clean_positives": false,
     "features": "embedding",
-    "hop_s": 0.24,
-    "augmented_training": true,
-    "split": "GroupShuffleSplit by uploader/source recording: 64% train / 16% val / 20% test",
-    "split_seed": 43,
-    "threshold_rule": "best validation recall with <= 1.0 false alarms/hour on validation walk-like negatives",
+    "context": 2,
     "C": 0.01,
-    "train_clips": {
-      "positives": 225,
-      "negatives": 2932,
-      "noisy_copies": 675
+    "augmented_training": true,
+    "cv": {
+      "screams": 269,
+      "everyday_hours": 5.83,
+      "hard_hours": 1.3,
+      "at_threshold": {
+        "recall": 0.5985,
+        "precision": 0.763,
+        "everyday_fa_per_hour": 2.92,
+        "hard_fa_per_hour": 50.1
+      },
+      "curve": [
+        {
+          "threshold": 0.1,
+          "recall": 0.9145,
+          "everyday_fa_per_hour": 53.9,
+          "hard_fa_per_hour": 448.2
+        },
+        {
+          "threshold": 0.12,
+          "recall": 0.8848,
+          "everyday_fa_per_hour": 42.06,
+          "hard_fa_per_hour": 383.4
+        },
+        {
+          "threshold": 0.14,
+          "recall": 0.8773,
+          "everyday_fa_per_hour": 33.13,
+          "hard_fa_per_hour": 326.3
+        },
+        {
+          "threshold": 0.16,
+          "recall": 0.8662,
+          "everyday_fa_per_hour": 27.81,
+          "hard_fa_per_hour": 289.3
+        },
+        {
+          "threshold": 0.18,
+          "recall": 0.8439,
+          "everyday_fa_per_hour": 22.83,
+          "hard_fa_per_hour": 251.5
+        },
+        {
+          "threshold": 0.2,
+          "recall": 0.8401,
+          "everyday_fa_per_hour": 20.09,
+          "hard_fa_per_hour": 219.9
+        },
+        {
+          "threshold": 0.22,
+          "recall": 0.8327,
+          "everyday_fa_per_hour": 16.65,
+          "hard_fa_per_hour": 193.6
+        },
+        {
+          "threshold": 0.24,
+          "recall": 0.8178,
+          "everyday_fa_per_hour": 15.11,
+          "hard_fa_per_hour": 174.3
+        },
+        {
+          "threshold": 0.26,
+          "recall": 0.8104,
+          "everyday_fa_per_hour": 13.05,
+          "hard_fa_per_hour": 162.0
+        },
+        {
+          "threshold": 0.28,
+          "recall": 0.7993,
+          "everyday_fa_per_hour": 12.19,
+          "hard_fa_per_hour": 148.9
+        },
+        {
+          "threshold": 0.3,
+          "recall": 0.7807,
+          "everyday_fa_per_hour": 11.16,
+          "hard_fa_per_hour": 126.5
+        },
+        {
+          "threshold": 0.32,
+          "recall": 0.7509,
+          "everyday_fa_per_hour": 8.93,
+          "hard_fa_per_hour": 114.2
+        },
+        {
+          "threshold": 0.34,
+          "recall": 0.7249,
+          "everyday_fa_per_hour": 7.73,
+          "hard_fa_per_hour": 100.3
+        },
+        {
+          "threshold": 0.36,
+          "recall": 0.7175,
+          "everyday_fa_per_hour": 6.52,
+          "hard_fa_per_hour": 92.6
+        },
+        {
+          "threshold": 0.38,
+          "recall": 0.7063,
+          "everyday_fa_per_hour": 6.01,
+          "hard_fa_per_hour": 85.6
+        },
+        {
+          "threshold": 0.4,
+          "recall": 0.6877,
+          "everyday_fa_per_hour": 5.49,
+          "hard_fa_per_hour": 74.8
+        },
+        {
+          "threshold": 0.42,
+          "recall": 0.6691,
+          "everyday_fa_per_hour": 4.64,
+          "hard_fa_per_hour": 66.3
+        },
+        {
+          "threshold": 0.44,
+          "recall": 0.6394,
+          "everyday_fa_per_hour": 3.78,
+          "hard_fa_per_hour": 64.0
+        },
+        {
+          "threshold": 0.46,
+          "recall": 0.6245,
+          "everyday_fa_per_hour": 3.61,
+          "hard_fa_per_hour": 59.4
+        },
+        {
+          "threshold": 0.48,
+          "recall": 0.6059,
+          "everyday_fa_per_hour": 3.61,
+          "hard_fa_per_hour": 54.0
+        },
+        {
+          "threshold": 0.5,
+          "recall": 0.5874,
+          "everyday_fa_per_hour": 2.58,
+          "hard_fa_per_hour": 50.1
+        },
+        {
+          "threshold": 0.52,
+          "recall": 0.5688,
+          "everyday_fa_per_hour": 2.23,
+          "hard_fa_per_hour": 46.3
+        },
+        {
+          "threshold": 0.54,
+          "recall": 0.5428,
+          "everyday_fa_per_hour": 1.89,
+          "hard_fa_per_hour": 40.9
+        },
+        {
+          "threshold": 0.56,
+          "recall": 0.513,
+          "everyday_fa_per_hour": 1.37,
+          "hard_fa_per_hour": 38.6
+        },
+        {
+          "threshold": 0.58,
+          "recall": 0.4796,
+          "everyday_fa_per_hour": 1.2,
+          "hard_fa_per_hour": 33.2
+        },
+        {
+          "threshold": 0.6,
+          "recall": 0.4572,
+          "everyday_fa_per_hour": 0.69,
+          "hard_fa_per_hour": 29.3
+        },
+        {
+          "threshold": 0.62,
+          "recall": 0.4275,
+          "everyday_fa_per_hour": 0.69,
+          "hard_fa_per_hour": 27.0
+        },
+        {
+          "threshold": 0.64,
+          "recall": 0.3978,
+          "everyday_fa_per_hour": 0.69,
+          "hard_fa_per_hour": 23.9
+        },
+        {
+          "threshold": 0.66,
+          "recall": 0.3792,
+          "everyday_fa_per_hour": 0.52,
+          "hard_fa_per_hour": 20.8
+        },
+        {
+          "threshold": 0.68,
+          "recall": 0.3457,
+          "everyday_fa_per_hour": 0.52,
+          "hard_fa_per_hour": 19.3
+        },
+        {
+          "threshold": 0.7,
+          "recall": 0.3234,
+          "everyday_fa_per_hour": 0.52,
+          "hard_fa_per_hour": 19.3
+        },
+        {
+          "threshold": 0.72,
+          "recall": 0.2974,
+          "everyday_fa_per_hour": 0.34,
+          "hard_fa_per_hour": 11.6
+        },
+        {
+          "threshold": 0.74,
+          "recall": 0.2751,
+          "everyday_fa_per_hour": 0.17,
+          "hard_fa_per_hour": 10.8
+        },
+        {
+          "threshold": 0.76,
+          "recall": 0.2454,
+          "everyday_fa_per_hour": 0.0,
+          "hard_fa_per_hour": 10.0
+        },
+        {
+          "threshold": 0.78,
+          "recall": 0.2193,
+          "everyday_fa_per_hour": 0.0,
+          "hard_fa_per_hour": 7.7
+        },
+        {
+          "threshold": 0.8,
+          "recall": 0.2007,
+          "everyday_fa_per_hour": 0.0,
+          "hard_fa_per_hour": 6.2
+        },
+        {
+          "threshold": 0.82,
+          "recall": 0.1747,
+          "everyday_fa_per_hour": 0.0,
+          "hard_fa_per_hour": 6.2
+        },
+        {
+          "threshold": 0.84,
+          "recall": 0.1301,
+          "everyday_fa_per_hour": 0.0,
+          "hard_fa_per_hour": 4.6
+        },
+        {
+          "threshold": 0.86,
+          "recall": 0.1004,
+          "everyday_fa_per_hour": 0.0,
+          "hard_fa_per_hour": 4.6
+        },
+        {
+          "threshold": 0.88,
+          "recall": 0.0706,
+          "everyday_fa_per_hour": 0.0,
+          "hard_fa_per_hour": 3.9
+        },
+        {
+          "threshold": 0.9,
+          "recall": 0.0558,
+          "everyday_fa_per_hour": 0.0,
+          "hard_fa_per_hour": 0.8
+        },
+        {
+          "threshold": 0.92,
+          "recall": 0.0446,
+          "everyday_fa_per_hour": 0.0,
+          "hard_fa_per_hour": 0.8
+        },
+        {
+          "threshold": 0.94,
+          "recall": 0.0223,
+          "everyday_fa_per_hour": 0.0,
+          "hard_fa_per_hour": 0.8
+        }
+      ]
     },
-    "val_clips": {
-      "positives": 44,
-      "negatives": 708
-    },
-    "val_at_threshold": {
-      "precision": 0.6735,
-      "recall": 0.75,
-      "f1": 0.7097,
-      "tp": 33,
-      "fp": 16,
-      "fn": 11,
-      "fa_walk_like_per_hour": 0.82,
-      "fa_hard_per_hour": 105.49
-    },
-    "val_tradeoff_curve": [
-      {
-        "threshold": 0.02,
-        "recall": 0.9773,
-        "fa_walk_like_per_hour": 288.05
-      },
-      {
-        "threshold": 0.04,
-        "recall": 0.9773,
-        "fa_walk_like_per_hour": 135.41
-      },
-      {
-        "threshold": 0.06,
-        "recall": 0.9318,
-        "fa_walk_like_per_hour": 85.35
-      },
-      {
-        "threshold": 0.08,
-        "recall": 0.9318,
-        "fa_walk_like_per_hour": 62.37
-      },
-      {
-        "threshold": 0.1,
-        "recall": 0.9318,
-        "fa_walk_like_per_hour": 43.49
-      },
-      {
-        "threshold": 0.12,
-        "recall": 0.9318,
-        "fa_walk_like_per_hour": 33.65
-      },
-      {
-        "threshold": 0.14,
-        "recall": 0.9091,
-        "fa_walk_like_per_hour": 23.8
-      },
-      {
-        "threshold": 0.16,
-        "recall": 0.9091,
-        "fa_walk_like_per_hour": 18.88
-      },
-      {
-        "threshold": 0.18,
-        "recall": 0.9091,
-        "fa_walk_like_per_hour": 12.31
-      },
-      {
-        "threshold": 0.2,
-        "recall": 0.9091,
-        "fa_walk_like_per_hour": 9.03
-      },
-      {
-        "threshold": 0.22,
-        "recall": 0.8636,
-        "fa_walk_like_per_hour": 8.21
-      },
-      {
-        "threshold": 0.24,
-        "recall": 0.8636,
-        "fa_walk_like_per_hour": 5.74
-      },
-      {
-        "threshold": 0.26,
-        "recall": 0.8409,
-        "fa_walk_like_per_hour": 4.92
-      },
-      {
-        "threshold": 0.28,
-        "recall": 0.8182,
-        "fa_walk_like_per_hour": 4.1
-      },
-      {
-        "threshold": 0.3,
-        "recall": 0.8182,
-        "fa_walk_like_per_hour": 4.1
-      },
-      {
-        "threshold": 0.32,
-        "recall": 0.7727,
-        "fa_walk_like_per_hour": 2.46
-      },
-      {
-        "threshold": 0.34,
-        "recall": 0.7727,
-        "fa_walk_like_per_hour": 2.46
-      },
-      {
-        "threshold": 0.36,
-        "recall": 0.75,
-        "fa_walk_like_per_hour": 2.46
-      },
-      {
-        "threshold": 0.38,
-        "recall": 0.75,
-        "fa_walk_like_per_hour": 1.64
-      },
-      {
-        "threshold": 0.4,
-        "recall": 0.75,
-        "fa_walk_like_per_hour": 0.82
-      },
-      {
-        "threshold": 0.42,
-        "recall": 0.7273,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.44,
-        "recall": 0.7045,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.46,
-        "recall": 0.6818,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.48,
-        "recall": 0.6591,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.5,
-        "recall": 0.6591,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.52,
-        "recall": 0.6364,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.54,
-        "recall": 0.6364,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.56,
-        "recall": 0.5909,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.58,
-        "recall": 0.5227,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.6,
-        "recall": 0.4545,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.62,
-        "recall": 0.3636,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.64,
-        "recall": 0.3409,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.66,
-        "recall": 0.3409,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.68,
-        "recall": 0.3182,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.7,
-        "recall": 0.2955,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.72,
-        "recall": 0.25,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.74,
-        "recall": 0.2045,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.76,
-        "recall": 0.1818,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.78,
-        "recall": 0.1818,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.8,
-        "recall": 0.1364,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.82,
-        "recall": 0.1364,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.84,
-        "recall": 0.0909,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.86,
-        "recall": 0.0909,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.88,
-        "recall": 0.0909,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.9,
-        "recall": 0.0909,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.92,
-        "recall": 0.0682,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.94,
-        "recall": 0.0227,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.96,
-        "recall": 0.0,
-        "fa_walk_like_per_hour": 0.0
-      },
-      {
-        "threshold": 0.98,
-        "recall": 0.0,
-        "fa_walk_like_per_hour": 0.0
-      }
-    ],
     "test_counts": {
       "classifier": {
-        "precision": 0.5833,
-        "recall": 0.7119,
-        "f1": 0.6412,
-        "tp": 42,
-        "fp": 30,
-        "fn": 17
+        "precision": 0.6333,
+        "recall": 0.6441,
+        "f1": 0.6387,
+        "tp": 38,
+        "fp": 22,
+        "fn": 21
       },
       "yamnet_only": {
         "precision": 0.85,
@@ -311,26 +316,22 @@
       }
     },
     "test_negatives_as_stream": {
-      "classifier_walk_like_per_hour": 4.87,
-      "classifier_hard_per_hour": 123.67,
-      "yamnet_only_walk_like_per_hour": 0.0,
-      "yamnet_only_hard_per_hour": 6.4,
-      "walk_like_hours": 1.437,
+      "everyday_per_hour": 3.48,
+      "hard_per_hour": 70.67,
+      "everyday_hours": 1.437,
       "hard_hours": 0.453
     },
     "test_false_positive_categories": {
-      "playful_scream": 10,
-      "Laughter": 4,
-      "Crowd": 3,
+      "playful_scream": 8,
       "Screech": 3,
-      "Cheering": 3,
+      "Laughter": 2,
+      "Crowd": 2,
+      "Cheering": 2,
       "esc50:pig": 1,
       "esc50:cow": 1,
       "Squeak": 1,
       "Door": 1,
-      "Run": 1,
-      "Crying_and_sobbing": 1,
-      "Siren": 1
+      "Run": 1
     },
     "test_missed_positive_clips": [
       "data/positive/fsd50k/107032.ogg",
@@ -343,11 +344,15 @@
       "data/positive/fsd50k/209164.ogg",
       "data/positive/fsd50k/219883.ogg",
       "data/positive/fsd50k/220368.ogg",
+      "data/positive/fsd50k/271242.ogg",
       "data/positive/fsd50k/273151.ogg",
       "data/positive/fsd50k/273153.ogg",
       "data/positive/fsd50k/321783.ogg",
       "data/positive/fsd50k/321785.ogg",
+      "data/positive/fsd50k/338938.ogg",
+      "data/positive/fsd50k/351337.ogg",
       "data/positive/fsd50k/355063.ogg",
+      "data/positive/fsd50k/395736.ogg",
       "data/positive/fsd50k/402645.ogg",
       "data/positive/fsd50k/432875.ogg"
     ],
@@ -369,20 +374,20 @@
     ],
     "data": "FSD50K Screaming clips (non-playful) vs 101 everyday sound categories from FSD50K + ESC-50 folds 1-4; see ml/data/ATTRIBUTION.csv",
     "false_alarms": {
-      "threshold": 0.4,
+      "threshold": 0.495,
       "by_set": {
         "hard": {
           "hours": 1.174,
-          "classifier_per_hour": 24.7,
+          "classifier_per_hour": 4.26,
           "yamnet_only_per_hour": 0.0
         },
         "walk_like": {
           "hours": 4.21,
-          "classifier_per_hour": 6.41,
+          "classifier_per_hour": 2.85,
           "yamnet_only_per_hour": 0.48
         }
       },
-      "classifier_triggers": 56,
+      "classifier_triggers": 17,
       "yamnet_only_triggers": 2,
       "background_files": [
         "public_hard_00.wav",
@@ -432,282 +437,87 @@
         {
           "file": "public_hard_00.wav",
           "at_s": 3.1,
-          "score": 0.538
-        },
-        {
-          "file": "public_hard_00.wav",
-          "at_s": 182.2,
-          "score": 0.41
+          "score": 0.536
         },
         {
           "file": "public_hard_00.wav",
           "at_s": 183.8,
-          "score": 0.639
-        },
-        {
-          "file": "public_hard_00.wav",
-          "at_s": 369.1,
-          "score": 0.468
-        },
-        {
-          "file": "public_hard_01.wav",
-          "at_s": 230.6,
-          "score": 0.419
-        },
-        {
-          "file": "public_hard_01.wav",
-          "at_s": 307.2,
-          "score": 0.752
-        },
-        {
-          "file": "public_hard_01.wav",
-          "at_s": 457.7,
-          "score": 0.562
-        },
-        {
-          "file": "public_hard_01.wav",
-          "at_s": 464.4,
-          "score": 0.733
-        },
-        {
-          "file": "public_hard_01.wav",
-          "at_s": 473.8,
-          "score": 0.456
-        },
-        {
-          "file": "public_hard_02.wav",
-          "at_s": 259.0,
-          "score": 0.622
-        },
-        {
-          "file": "public_hard_02.wav",
-          "at_s": 264.2,
-          "score": 0.645
+          "score": 0.618
         },
         {
           "file": "public_hard_02.wav",
           "at_s": 264.7,
-          "score": 0.705
+          "score": 0.523
         },
         {
           "file": "public_hard_02.wav",
-          "at_s": 268.8,
-          "score": 0.599
-        },
-        {
-          "file": "public_hard_02.wav",
-          "at_s": 277.0,
-          "score": 0.59
-        },
-        {
-          "file": "public_hard_03.wav",
-          "at_s": 94.1,
-          "score": 0.422
-        },
-        {
-          "file": "public_hard_03.wav",
-          "at_s": 447.6,
-          "score": 0.426
-        },
-        {
-          "file": "public_hard_04.wav",
-          "at_s": 78.5,
-          "score": 0.737
-        },
-        {
-          "file": "public_hard_04.wav",
-          "at_s": 79.0,
-          "score": 0.453
-        },
-        {
-          "file": "public_hard_04.wav",
-          "at_s": 205.0,
-          "score": 0.566
-        },
-        {
-          "file": "public_hard_04.wav",
-          "at_s": 211.0,
-          "score": 0.43
-        },
-        {
-          "file": "public_hard_04.wav",
-          "at_s": 221.8,
-          "score": 0.411
-        },
-        {
-          "file": "public_hard_04.wav",
-          "at_s": 479.5,
-          "score": 0.548
-        },
-        {
-          "file": "public_hard_05.wav",
-          "at_s": 469.4,
-          "score": 0.583
-        },
-        {
-          "file": "public_hard_06.wav",
-          "at_s": 261.8,
-          "score": 0.508
-        },
-        {
-          "file": "public_hard_06.wav",
-          "at_s": 470.9,
-          "score": 0.428
+          "at_s": 269.0,
+          "score": 0.552
         },
         {
           "file": "public_hard_07.wav",
-          "at_s": 44.2,
-          "score": 0.48
-        },
-        {
-          "file": "public_hard_07.wav",
-          "at_s": 183.8,
-          "score": 0.763
-        },
-        {
-          "file": "public_hard_07.wav",
-          "at_s": 185.3,
-          "score": 0.752
-        },
-        {
-          "file": "public_hard_07.wav",
-          "at_s": 472.3,
-          "score": 0.652
-        },
-        {
-          "file": "public_walk_15.wav",
-          "at_s": 301.0,
-          "score": 0.448
-        },
-        {
-          "file": "public_walk_16.wav",
-          "at_s": 474.0,
-          "score": 0.539
+          "at_s": 44.4,
+          "score": 0.726
         },
         {
           "file": "public_walk_16.wav",
           "at_s": 475.7,
-          "score": 0.681
+          "score": 0.67
         },
         {
           "file": "public_walk_16.wav",
           "at_s": 476.2,
-          "score": 0.519
-        },
-        {
-          "file": "public_walk_19.wav",
-          "at_s": 8.4,
-          "score": 0.445
-        },
-        {
-          "file": "public_walk_20.wav",
-          "at_s": 286.1,
-          "score": 0.495
-        },
-        {
-          "file": "public_walk_20.wav",
-          "at_s": 288.2,
-          "score": 0.419
+          "score": 0.532
         },
         {
           "file": "public_walk_21.wav",
-          "at_s": 210.5,
-          "score": 0.427
+          "at_s": 212.9,
+          "score": 0.586
         },
         {
           "file": "public_walk_21.wav",
-          "at_s": 211.9,
-          "score": 0.503
+          "at_s": 213.4,
+          "score": 0.744
         },
         {
           "file": "public_walk_21.wav",
-          "at_s": 212.6,
-          "score": 0.491
+          "at_s": 213.8,
+          "score": 0.644
         },
         {
           "file": "public_walk_21.wav",
-          "at_s": 213.1,
-          "score": 0.715
-        },
-        {
-          "file": "public_walk_21.wav",
-          "at_s": 213.6,
-          "score": 0.833
-        },
-        {
-          "file": "public_walk_21.wav",
-          "at_s": 214.1,
-          "score": 0.429
-        },
-        {
-          "file": "public_walk_21.wav",
-          "at_s": 214.8,
-          "score": 0.457
+          "at_s": 214.6,
+          "score": 0.597
         },
         {
           "file": "public_walk_21.wav",
           "at_s": 215.3,
-          "score": 0.727
+          "score": 0.732
         },
         {
           "file": "public_walk_21.wav",
           "at_s": 215.8,
-          "score": 0.822
+          "score": 0.827
         },
         {
           "file": "public_walk_21.wav",
           "at_s": 217.0,
-          "score": 0.479
-        },
-        {
-          "file": "public_walk_21.wav",
-          "at_s": 217.9,
-          "score": 0.47
-        },
-        {
-          "file": "public_walk_21.wav",
-          "at_s": 218.6,
-          "score": 0.424
-        },
-        {
-          "file": "public_walk_21.wav",
-          "at_s": 225.6,
-          "score": 0.673
-        },
-        {
-          "file": "public_walk_21.wav",
-          "at_s": 226.1,
-          "score": 0.706
+          "score": 0.512
         },
         {
           "file": "public_walk_21.wav",
           "at_s": 226.6,
-          "score": 0.803
+          "score": 0.817
         },
         {
           "file": "public_walk_21.wav",
-          "at_s": 227.3,
-          "score": 0.632
-        },
-        {
-          "file": "public_walk_21.wav",
-          "at_s": 227.8,
-          "score": 0.718
+          "at_s": 227.5,
+          "score": 0.52
         },
         {
           "file": "public_walk_22.wav",
           "at_s": 139.7,
-          "score": 0.623
-        },
-        {
-          "file": "public_walk_28.wav",
-          "at_s": 411.8,
-          "score": 0.452
-        },
-        {
-          "file": "public_walk_28.wav",
-          "at_s": 412.6,
-          "score": 0.48
+          "score": 0.629
         }
       ]
     }

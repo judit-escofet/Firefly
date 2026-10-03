@@ -105,6 +105,11 @@ def head_score(head, emb, yam=None, scores=None):
     fusion "geomean_yamnet": sqrt(sigmoid(w·x + b) × YAMNet scream score).
     model_type "mlp": multi-layer perceptron with ReLU hidden layers."""
     x = emb if head.get("features", "embedding") == "embedding" else np.hstack([emb, logit_scores(scores)])
+    # context N: rows of `emb` must be consecutive windows of ONE 0.48 s grid; the previous N
+    # windows of that grid are appended (clamped to the first row), exactly like training.
+    for k in range(1, int(head.get("context", 0)) + 1):
+        idx = np.maximum(np.arange(len(emb)) - k, 0)
+        x = np.hstack([x, np.asarray(emb)[idx]])
     if head.get("model_type") == "mlp":
         # MLP: iterate through layers
         for layer in head["layers"]:
