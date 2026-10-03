@@ -1,6 +1,6 @@
 // POST /api/walks/{walk_id}/end  {"reason": "arrived" | "stopped", "ts"?: ISO}
 // arrived = same as the arrived event (texts "home safe"); stopped = close quietly.
-const { app } = require('@azure/functions');
+const { app } = require('../../lib/router');
 const { handle, readJson, json, badRequest, requireWalkId, optionalTs } = require('../../lib/http');
 const { loadWalk, markArrived, endQuietly, logEvent } = require('../../lib/walks');
 

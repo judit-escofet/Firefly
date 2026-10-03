@@ -190,14 +190,9 @@
   // ---------- map ----------
   function initMap(walk) {
     map = L.map('map', { zoomControl: true, attributionControl: true });
-    const azure = L.tileLayer('/api/tiles/{z}/{x}/{y}', { maxZoom: 19, attribution: '© Microsoft Azure Maps' });
-    let switched = false;
-    azure.on('tileerror', () => { // mock mode / maps key missing: fall back to OpenStreetMap
-      if (switched) return; switched = true;
-      map.removeLayer(azure);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
-    });
-    azure.addTo(map);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '© OpenStreetMap contributors',
+    }).addTo(map);
 
     routeLine = L.polyline(walk.route.points, { color: '#2f6fd6', weight: 6, opacity: 0.35 }).addTo(map);
     trailLine = L.polyline(walk.trail || [], { color: '#2f6fd6', weight: 4 }).addTo(map);
@@ -241,23 +236,30 @@
     else if (msg.type === 'clip') setClip(msg.clip_url);
   }
 
-  // ---------- live connection (Web PubSub), with reconnect ----------
+  // ---------- live connection (API Gateway WebSocket), with reconnect ----------
+  // AWS closes idle sockets after 10 minutes, so the page pings every 5.
   let backoff = 1000;
+  let pingTimer;
   async function connect() {
     if (document.body.classList.contains('is-expired')) return;
     try {
       const res = await fetch(`/api/negotiate?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
       if (res.status === 404 || res.status === 410) return showExpired();
+      if (res.status === 503) return; // live updates not configured (local dev): polling only
       if (!res.ok) throw new Error(`negotiate ${res.status}`);
       const { url } = await res.json();
-      const ws = new WebSocket(url, 'json.webpubsub.azure.v1');
+      const ws = new WebSocket(url);
       state.ws = ws;
-      ws.onopen = () => { backoff = 1000; fetchSnapshot().then((w) => w && applySnapshot(w)).catch(() => {}); };
-      ws.onmessage = (e) => {
-        const m = JSON.parse(e.data);
-        if (m.type === 'message' && m.data) onMessage(typeof m.data === 'string' ? JSON.parse(m.data) : m.data);
+      ws.onopen = () => {
+        backoff = 1000;
+        clearInterval(pingTimer);
+        pingTimer = setInterval(() => { if (ws.readyState === WebSocket.OPEN) ws.send('{"action":"ping"}'); }, 5 * 60_000);
+        fetchSnapshot().then((w) => w && applySnapshot(w)).catch(() => {});
       };
-      ws.onclose = () => { state.ws = null; retry(); };
+      ws.onmessage = (e) => {
+        try { onMessage(JSON.parse(e.data)); } catch { /* ignore non-JSON frames */ }
+      };
+      ws.onclose = () => { clearInterval(pingTimer); state.ws = null; retry(); };
     } catch {
       retry();
     }

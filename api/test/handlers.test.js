@@ -1,11 +1,12 @@
 // Handler tests with a fake database: input validation (W1), texts and the 60 s alert guard (W6).
-// No Azure, Twilio or Tiger Data needed; SMS and PubSub run in their logging mock mode.
+// No AWS, Twilio or Tiger Data needed; SMS, maps and live updates run in their logging mock mode.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
 
-for (const k of Object.keys(process.env)) if (/^(TWILIO|WEBPUBSUB|AZURE_MAPS|STORAGE)_/.test(k)) delete process.env[k];
+for (const k of Object.keys(process.env)) if (/^(TWILIO|WS|CLIPS|AWS)_/.test(k)) delete process.env[k];
 process.env.PUBLIC_BASE_URL = 'https://firefly.test';
+process.env.MOCK_MAPS = '1';
 
 // ---- fake db: route SQL to handlers by a regex ----
 const calls = [];
@@ -21,10 +22,8 @@ require.cache[path.resolve(__dirname, '../db/index.js')] = {
   id: 'db', filename: 'db', loaded: true, exports: fakeDb,
 };
 
-// ---- capture handlers instead of registering with the Functions host ----
-const functions = require('@azure/functions');
-const handlers = {};
-functions.app.http = (name, opts) => { handlers[name] = opts.handler; };
+// ---- load every endpoint; the router keeps each handler by name ----
+const { byName: handlers, Request, dispatch } = require('../lib/router');
 for (const f of require('fs').readdirSync(path.join(__dirname, '../src/functions'))) require(`../src/functions/${f}`);
 
 const quiet = { log() {}, warn() {}, error() {}, info() {} };
@@ -34,10 +33,10 @@ const origWarn = console.warn;
 async function call(name, { method = 'POST', body, params = {}, query = {}, headers = {} } = {}) {
   const url = new URL('https://firefly.test/api/x');
   for (const [k, v] of Object.entries(query)) url.searchParams.set(k, v);
-  const req = new functions.HttpRequest({
+  const req = new Request({
     method, url: url.toString(), params,
     headers: { 'content-type': 'application/json', ...headers },
-    body: body === undefined ? undefined : { string: typeof body === 'string' ? body : JSON.stringify(body) },
+    body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body),
   });
   const ctx = { ...quiet, warn: (m) => texts.push(m) };
   return handlers[name](req, ctx);
@@ -175,4 +174,22 @@ test('W10: unknown token and walks ended over 2 hours ago return "link expired"'
   responders = [[/share_token = \$1/, () => ({ rows: [{ walk_id: 'w_456', ended_at: new Date(Date.now() - 3 * 3600e3) }] })]];
   res = await call('negotiate', { method: 'GET', query: { token: 'Xk3v9QpL2mN7rT8wZ1yB4cDe' } });
   assert.equal(res.status, 410);
+});
+
+test('router: matches routes, extracts params, 404s and 405s', async () => {
+  responders = [[/INSERT INTO detector_scores/, (p) => ({ rowCount: p[0].length })]];
+  const ok = await dispatch({
+    method: 'POST', url: 'https://firefly.test/api/walks/w_456/scores',
+    headers: { 'content-type': 'application/json' },
+    body: Buffer.from(JSON.stringify({ scores: [{ ts: '2026-10-03T23:40:00Z', score: 0.5 }] })),
+  });
+  assert.deepEqual(ok.jsonBody, { saved: 1 });
+  assert.equal(calls[0].params[1], 'w_456');
+  assert.equal(await dispatch({ method: 'GET', url: 'https://firefly.test/api/nope' }), null);
+  assert.equal((await dispatch({ method: 'DELETE', url: 'https://firefly.test/api/profile' })).status, 405);
+});
+
+test('W10: clip links reject bad file names and need no AWS for that check', async () => {
+  const res = await call('clipGet', { method: 'GET', params: { walk_id: 'w_456', file: '../../etc' } });
+  assert.equal(res.status, 404);
 });

@@ -2,3 +2,6 @@ node_modules/
 api/local.settings.json
 .env
 *.log
+.aws-sam/
+api/static/
+samconfig.toml

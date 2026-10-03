@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Firefly P3 - walks, alerts, texts and the contacts' live tracking page
+
+Parameters:
+  TigerDatabaseUrl:
+    Type: String
+    NoEcho: true
+    Description: postgres://tsdbadmin:PASSWORD@host:port/tsdb?sslmode=verify-full
+  TwilioAccountSid:
+    Type: String
+    Default: ''
+  TwilioAuthToken:
+    Type: String
+    NoEcho: true
+    Default: ''
+  TwilioFromNumber:
+    Type: String
+    Default: ''
+    Description: Twilio number in +1... format. Leave the Twilio fields blank to log texts instead.
+  PublicBaseUrl:
+    Type: String
+    Default: ''
+    Description: Optional custom domain for share links. Blank = the API Gateway URL.
+  MockMaps:
+    Type: String
+    Default: '0'
+    AllowedValues: ['0', '1']
+    Description: '1 = straight-line routes instead of Amazon Location (demo fallback)'
+
+Conditions:
+  HasPublicBaseUrl: !Not [!Equals [!Ref PublicBaseUrl, '']]
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    CodeUri: api/
+    MemorySize: 512
+    Timeout: 20
+    Environment:
+      Variables:
+        TIGER_DATABASE_URL: !Ref TigerDatabaseUrl
+        PG_POOL_MAX: '2'
+
+Resources:
+  # ---------- Clips: private bucket, objects deleted after 2 days ----------
+  ClipsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-clips
+            Status: Enabled
+            ExpirationInDays: 2
+
+  # ---------- HTTP API: /api/* and /track/{token} ----------
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowMethods: [GET, POST, OPTIONS]
+        AllowHeaders: [Content-Type, X-Clip-Duration]
+        MaxAge: 600
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/lambda.handler
+      Environment:
+        Variables:
+          CLIPS_BUCKET: !Ref ClipsBucket
+          WS_URL: !Sub wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/live
+          WS_MANAGEMENT_URL: !Sub https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/live
+          PUBLIC_BASE_URL: !If [HasPublicBaseUrl, !Ref PublicBaseUrl, !Ref AWS::NoValue]
+          MOCK_MAPS: !Ref MockMaps
+          TWILIO_ACCOUNT_SID: !Ref TwilioAccountSid
+          TWILIO_AUTH_TOKEN: !Ref TwilioAuthToken
+          TWILIO_FROM_NUMBER: !Ref TwilioFromNumber
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref ClipsBucket
+        - Statement:
+            - Effect: Allow
+              Action: geo-routes:CalculateRoutes
+              Resource: '*'
+            - Effect: Allow
+              Action: execute-api:ManageConnections
+              Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /api/{proxy+}
+            Method: ANY
+        TrackPage:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /track/{token}
+            Method: GET
+
+  # ---------- WebSocket API: live updates to tracking pages ----------
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: firefly-live
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+
+  WsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/ws.handler
+      Timeout: 10
+
+  WsIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WsFunction.Arn}/invocations
+
+  WsConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $connect
+      AuthorizationType: NONE
+      Target: !Sub integrations/${WsIntegration}
+
+  WsDisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $disconnect
+      Target: !Sub integrations/${WsIntegration}
+
+  WsDefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $default
+      Target: !Sub integrations/${WsIntegration}
+
+  WsStage:
+    Type: AWS::ApiGatewayV2::Stage
+    DependsOn: [WsConnectRoute, WsDisconnectRoute, WsDefaultRoute]
+    Properties:
+      ApiId: !Ref WebSocketApi
+      StageName: live
+      AutoDeploy: true
+
+  WsInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref WsFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+
+Outputs:
+  AppUrl:
+    Description: Base URL for the API (/api/...) and tracking links (/track/...). Give this to P4.
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+  WebSocketUrl:
+    Value: !Sub wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/live
+  ClipsBucketName:
+    Value: !Ref ClipsBucket

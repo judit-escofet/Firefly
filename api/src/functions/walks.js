@@ -1,6 +1,6 @@
 // POST /api/walks — plan a walking route, create the walk and its share link, text the contacts.
 const crypto = require('crypto');
-const { app } = require('@azure/functions');
+const { app } = require('../../lib/router');
 const db = require('../../db');
 const { walkingRoute } = require('../../lib/maps');
 const { textAll } = require('../../lib/sms');
@@ -29,7 +29,7 @@ app.http('walks', {
       route = await walkingRoute(start, dest);
     } catch (err) {
       context.error(err);
-      throw new HttpError(502, 'Could not get a walking route from Azure Maps');
+      throw new HttpError(502, 'Could not get a walking route from Amazon Location');
     }
     if (route.distance_m > MAX_WALK_M) throw badRequest('Destination is too far to walk (over 20 km)');
 
