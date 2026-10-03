@@ -1,0 +1,23 @@
+{
+  "walk_id": "w_456",
+  "user_id": "u_test",
+  "status": "walking",
+  "share_token": "Xk3v9QpL2mN7rT8wZ1yB4cDe",
+  "share_url": "https://firefly.example.net/track/Xk3v9QpL2mN7rT8wZ1yB4cDe",
+  "start": { "lat": 40.7425, "lng": -74.1781 },
+  "destination": { "lat": 40.739, "lng": -74.172, "label": "Home" },
+  "route": {
+    "points": [
+      { "lat": 40.7425, "lng": -74.1781 },
+      { "lat": 40.7418, "lng": -74.1768 },
+      { "lat": 40.7409, "lng": -74.1752 },
+      { "lat": 40.7401, "lng": -74.1738 },
+      { "lat": 40.7394, "lng": -74.1726 },
+      { "lat": 40.739, "lng": -74.172 }
+    ],
+    "distance_m": 680,
+    "eta_s": 520
+  },
+  "started_at": "2026-10-03T23:38:00.000Z",
+  "ended_at": null
+}

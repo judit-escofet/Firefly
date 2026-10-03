@@ -1,0 +1,16 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AzureWebJobsStorage": "",
+    "PUBLIC_BASE_URL": "http://localhost:4280",
+    "AZURE_MAPS_KEY": "",
+    "TIGER_DATABASE_URL": "",
+    "STORAGE_CONNECTION_STRING": "",
+    "WEBPUBSUB_CONNECTION_STRING": "",
+    "WEBPUBSUB_HUB": "firefly",
+    "TWILIO_ACCOUNT_SID": "",
+    "TWILIO_AUTH_TOKEN": "",
+    "TWILIO_FROM_NUMBER": ""
+  }
+}
