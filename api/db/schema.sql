@@ -47,6 +47,16 @@ CREATE TABLE IF NOT EXISTS memories (
 );
 CREATE INDEX IF NOT EXISTS memories_user_idx ON memories (user_id, created_at DESC);
 
+-- Alert clips when not using S3 (e.g. hosted on Render). Max 2 MB each; removed after 2 days.
+CREATE TABLE IF NOT EXISTS clips (
+  walk_id          TEXT NOT NULL REFERENCES walks(walk_id) ON DELETE CASCADE,
+  file             TEXT NOT NULL,
+  content_type     TEXT NOT NULL,
+  data             BYTEA NOT NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (walk_id, file)
+);
+
 -- Open WebSocket connections from tracking pages (API Gateway WebSocket API).
 CREATE TABLE IF NOT EXISTS ws_connections (
   connection_id    TEXT PRIMARY KEY,

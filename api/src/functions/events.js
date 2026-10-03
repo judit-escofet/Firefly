@@ -10,28 +10,37 @@ const { loadWalk, raiseAlert, markArrived, logEvent } = require('../../lib/walks
 const ALERT_TYPES = new Set(['alert_sent', 'duress']);
 const KNOWN = new Set(['source', 'confidence', 'clip_url', 'ts', 'type']);
 
+// Events that must never be rejected over a bad optional field: dropping an alert is worse than
+// storing it with a missing clip. Their bad fields are kept aside in data.invalid instead.
+const NEVER_REJECT = new Set([...ALERT_TYPES, 'arrived']);
+
 function validate(body) {
   if (typeof body.type !== 'string' || !/^[a-z][a-z0-9_]{1,40}$/.test(body.type)) {
     throw badRequest('type is required, e.g. "check_in", "alert_sent", "duress" or "arrived"');
   }
-  if (body.source != null && (typeof body.source !== 'string' || body.source.length > 40)) {
-    throw badRequest('source must be a short string');
-  }
-  if (body.confidence != null && (!isNum(body.confidence) || body.confidence < 0 || body.confidence > 1)) {
-    throw badRequest('confidence must be a number from 0 to 1');
-  }
-  if (body.clip_url != null && (typeof body.clip_url !== 'string' || !/^https:\/\//.test(body.clip_url))) {
-    throw badRequest('clip_url must be an https URL or null');
-  }
-  const extra = Object.fromEntries(Object.entries(body).filter(([k]) => !KNOWN.has(k)));
-  return {
-    type: body.type,
-    source: body.source ?? null,
-    confidence: body.confidence ?? null,
-    clip_url: body.clip_url ?? null,
-    ts: optionalTs(body.ts),
-    data: Object.keys(extra).length ? extra : null,
+  const lenient = NEVER_REJECT.has(body.type);
+  const invalid = {};
+  const check = (field, ok, message) => {
+    if (body[field] == null || ok(body[field])) return body[field] ?? null;
+    if (!lenient) throw badRequest(message);
+    invalid[field] = body[field];
+    return null;
   };
+
+  const source = check('source', (v) => typeof v === 'string' && v.length <= 40, 'source must be a short string');
+  const confidence = check('confidence', (v) => isNum(v) && v >= 0 && v <= 1, 'confidence must be a number from 0 to 1');
+  const clipUrl = check('clip_url', (v) => typeof v === 'string' && /^https?:\/\/\S+$/.test(v) && v.length <= 2000,
+    'clip_url must be a URL or null');
+  let ts;
+  try { ts = optionalTs(body.ts); } catch (err) {
+    if (!lenient) throw err;
+    invalid.ts = body.ts;
+    ts = new Date();
+  }
+
+  const extra = Object.fromEntries(Object.entries(body).filter(([k]) => !KNOWN.has(k)));
+  if (Object.keys(invalid).length) extra.invalid = invalid;
+  return { type: body.type, source, confidence, clip_url: clipUrl, ts, data: Object.keys(extra).length ? extra : null };
 }
 
 app.http('events', {

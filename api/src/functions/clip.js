@@ -5,7 +5,7 @@
 // X-Clip-Duration (seconds) or ?duration_s=; without it, the 2 MB cap still bounds the clip.
 const { app } = require('../../lib/router');
 const db = require('../../db');
-const { uploadClip, clipRedirectUrl } = require('../../lib/storage');
+const { uploadClip, getClip } = require('../../lib/storage');
 const { pushToWalk } = require('../../lib/realtime');
 const { handle, json, badRequest, notFound, requireWalkId, baseUrl, HttpError } = require('../../lib/http');
 
@@ -84,8 +84,9 @@ app.http('clipGet', {
     const walkId = requireWalkId(request);
     const { file } = request.params;
     if (!/^[a-f0-9]{32}\.(webm|wav)$/.test(file)) throw notFound('Clip not found');
-    const url = await clipRedirectUrl(walkId, file);
-    if (!url) throw new HttpError(410, 'link expired');
-    return { status: 302, headers: { Location: url, 'Cache-Control': 'no-store' } };
+    const clip = await getClip(walkId, file);
+    if (!clip) throw new HttpError(410, 'link expired');
+    if (clip.redirect) return { status: 302, headers: { Location: clip.redirect, 'Cache-Control': 'no-store' } };
+    return { status: 200, body: clip.body, headers: { 'Content-Type': clip.contentType, 'Cache-Control': 'private, no-store' } };
   }),
 });

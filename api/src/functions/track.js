@@ -60,3 +60,14 @@ app.http('track', {
     });
   }),
 });
+
+// GET /api/health — for hosting health checks: 200 when the database answers.
+app.http('health', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'health',
+  handler: handle(async () => {
+    await db.query('SELECT 1');
+    return json(200, { ok: true });
+  }),
+});

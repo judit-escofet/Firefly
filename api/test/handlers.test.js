@@ -142,9 +142,21 @@ test('W6: alert texts the exact message once; a second alert within 60 s does no
 });
 
 test('events: bad input returns 400', async () => {
-  for (const body of [{}, { type: 'Alert Sent' }, { type: 'alert_sent', confidence: 3 }, { type: 'check_in', ts: 'yesterday' }]) {
+  for (const body of [{}, { type: 'Alert Sent' }, { type: 'check_in', confidence: 3 }, { type: 'check_in', ts: 'yesterday' }]) {
     assert.equal((await call('events', { params: { walk_id: 'w_456' }, body })).status, 400, JSON.stringify(body));
   }
+});
+
+test('alerts are never rejected over bad optional fields; the bad values are kept aside', async () => {
+  responders = [
+    [/FROM walks w JOIN users/, () => ({ rows: [{ walk_id: 'w_456', share_token: 'Xk3v9QpL2mN7rT8wZ1yB4cDe', name: 'Priya', contacts: goodProfile.contacts }] })],
+    [/UPDATE walks\s+SET status = 'alert'/, () => ({ rows: [{ clip_url: null }], rowCount: 1 })],
+  ];
+  const res = await call('events', { params: { walk_id: 'w_456' }, body: { type: 'alert_sent', confidence: 3, clip_url: 'not a url', ts: 'yesterday' } });
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.jsonBody.texted, ['+15551230001', '+15551230002']);
+  const insert = calls.find((c) => /INSERT INTO walk_events/.test(c.sql));
+  assert.deepEqual(insert.params[7].invalid, { confidence: 3, clip_url: 'not a url', ts: 'yesterday' });
 });
 
 test('scores: inserts in one statement and caps at 200', async () => {

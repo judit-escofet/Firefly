@@ -1,7 +1,7 @@
 // Local dev server: npm start  ->  http://localhost:4280
 // Serves the API, the tracking page at /track/{token}, and anything else in app/public.
 // Settings come from api/local.settings.json (git-ignored). No WebSocket locally: the tracking page
-// falls back to polling every 10 seconds.
+// falls back to polling every 3 seconds.
 const fs = require('fs');
 const path = require('path');
 const http = require('http');

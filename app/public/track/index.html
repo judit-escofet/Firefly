@@ -169,7 +169,7 @@
   }
 
   function applyPosition(p) {
-    if (state.lastTs && new Date(p.ts) < new Date(state.lastTs)) return; // ignore out-of-order
+    if (state.lastTs && new Date(p.ts) <= new Date(state.lastTs)) { renderStale(); return; } // old or repeated (polling)
     state.lastTs = p.ts;
     const ll = [p.lat, p.lng];
     if (!me) {
@@ -269,15 +269,19 @@
     backoff = Math.min(backoff * 2, 30_000);
   }
 
-  // Polling backs up the socket: fast when the socket is down, slow otherwise.
+  // Polling: every 3 s when there's no live socket (keeps updates within the 5 s target),
+  // once a minute as a safety net when there is one.
   let pollTimer;
+  let polling = false;
   function startPolling() {
     let tick = 0;
     pollTimer = setInterval(() => {
       tick++;
       const live = state.ws && state.ws.readyState === WebSocket.OPEN;
-      if (!live || tick % 6 === 0) fetchSnapshot().then((w) => w && applySnapshot(w)).catch(() => {});
-    }, 10_000);
+      if (polling || (live && tick % 20 !== 0)) return;
+      polling = true;
+      fetchSnapshot().then((w) => w && applySnapshot(w)).catch(() => {}).finally(() => { polling = false; });
+    }, 3000);
   }
 
   $('clipBtn').addEventListener('click', () => {
