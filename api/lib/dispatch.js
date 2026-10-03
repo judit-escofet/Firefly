@@ -56,7 +56,9 @@ const voiceAppConfigured = () => vonage.voiceConfigured() || twilioVoiceConfigur
 // Browser token for the in-app call: { provider, token }.
 async function voiceToken(identity, ttl = 600) {
   if (provider() === 'vonage') {
-    await vonage.ensureUser(identity);
+    // If this fails, the token is still issued: the browser's login then fails and the app falls
+    // back to the automated server call, so the dispatcher is still called.
+    try { await vonage.ensureUser(identity); } catch (err) { console.error(`Vonage user setup failed: ${err.message}`); }
     return { provider: 'vonage', token: vonage.clientJwt(identity, ttl) };
   }
   return { provider: 'twilio', token: twilioToken(identity, ttl) };

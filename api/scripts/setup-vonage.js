@@ -64,9 +64,39 @@ async function getJson(url, init) {
 
   Object.assign(process.env, { VONAGE_API_KEY: key, VONAGE_API_SECRET: secret, VONAGE_APPLICATION_ID: appId, VONAGE_PRIVATE_KEY: pem, VONAGE_FROM_NUMBER: from });
   const vonage = require('../lib/vonage');
-  const jwtCheck = await getJson('https://api.nexmo.com/v1/users?page_size=1', { headers: { Authorization: `Bearer ${vonage.appJwt()}` } });
-  if (!jwtCheck.ok) throw new Error(`The private key doesn't match this application (${jwtCheck.status}). Use the private.key downloaded for "${appRes.data.name}", or generate a new key pair on the dashboard.`);
-  console.log('OK: the private key belongs to this application.');
+
+  // Exact check: the public key Vonage stores for the application must match this private key.
+  const crypto = require('crypto');
+  const norm = (k) => crypto.createPublicKey(k).export({ type: 'spki', format: 'der' }).toString('base64');
+  const appPublic = appRes.data.keys?.public_key;
+  if (!appPublic) {
+    // Happens when "Generate public and private key" was clicked but the application wasn't saved:
+    // the private key downloaded, but Vonage never stored the public half, so every call is 401.
+    console.log(`!! "${appRes.data.name}" has no public key saved, so Vonage would reject every call.`);
+    if (await yes('Upload the public key that matches your private.key now?')) {
+      const publicKey = crypto.createPublicKey(pem).export({ type: 'spki', format: 'pem' });
+      const put = await getJson(`https://api.nexmo.com/v2/applications/${encodeURIComponent(appId)}`, {
+        method: 'PUT', headers: { ...basic, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: appRes.data.name, capabilities: appRes.data.capabilities, keys: { public_key: publicKey } }),
+      });
+      if (!put.ok) throw new Error(`Vonage refused the key upload (${put.status}). Use the dashboard: Edit > Generate public and private key > Save changes.`);
+      console.log('OK: public key saved; it matches your private.key.');
+    }
+  } else {
+    if (norm(pem) !== norm(appPublic)) {
+      throw new Error(`This private.key is not the one for "${appRes.data.name}": the dashboard has a newer key pair.
+   Fix: dashboard > Applications > ${appRes.data.name} > Edit > "Generate public and private key" > Save changes.
+   A new private_*.key downloads; run this script again (it picks the newest file).`);
+    }
+    console.log('OK: the private key belongs to this application.');
+  }
+
+  // The computer's clock must be right: Vonage rejects tokens "issued in the future".
+  const head = await fetch('https://api.nexmo.com/', { method: 'HEAD', signal: AbortSignal.timeout(10000) }).catch(() => null);
+  const serverDate = head && Date.parse(head.headers.get('date'));
+  if (serverDate && Math.abs(serverDate - Date.now()) > 120000) {
+    console.log(`!! This computer's clock is ${Math.round((Date.now() - serverDate) / 1000)} s off. Turn on "Set time automatically" in Windows settings.`);
+  }
 
   const nums = await getJson(`https://rest.nexmo.com/account/numbers?api_key=${encodeURIComponent(key)}&api_secret=${encodeURIComponent(secret)}`);
   const mine = (nums.data.numbers || []).find((n) => n.msisdn === digits(from));
