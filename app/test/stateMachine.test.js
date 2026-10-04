@@ -186,3 +186,28 @@ describe('state machine — edge cases', () => {
     expect(t.logged.at(-1)).toMatchObject({ type: 'alert_sent', clip_url: null });
   });
 });
+
+describe('distress phrase ("I\'ve been stabbed") — the user journey', () => {
+  it('starts the countdown; with no PIN within 10 s it sends alert_sent with source distress', async () => {
+    const t = setup();
+    t.sm.danger({ source: 'distress', confidence: 1, detail: 'heard "ive been stabbed"' });
+    expect(t.sm.state).toBe('countdown');
+    expect(t.logged[0]).toMatchObject({ type: 'countdown_started', source: 'distress' });
+    t.clock.advance(10_000);
+    await flush();
+    await flush();
+    expect(t.states()).toContain('alerted');
+    expect(t.logged.find((e) => e.type === 'alert_sent')).toMatchObject({ source: 'distress' });
+  });
+
+  it('her cancel PIN within the countdown stops it: nothing is sent', async () => {
+    const t = setup();
+    t.sm.danger({ source: 'distress', confidence: 1 });
+    t.clock.advance(4000);
+    t.sm.pin('cancel');
+    t.clock.advance(10_000);
+    await flush();
+    expect(t.states()).not.toContain('alerted');
+    expect(t.logged.some((e) => e.type === 'alert_sent')).toBe(false);
+  });
+});

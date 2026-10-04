@@ -19,6 +19,11 @@ const { twilioClient, textAll } = require('./sms');
 const vonage = require('./vonage');
 
 const DEFAULT_DISPATCH_NUMBER = '+13128262020';
+// Demo-mode walks live only on the phone, so the app sends her name and position with the call.
+// Those calls are limited (they aren't tied to a stored walk) so the public URL can't burn credit.
+const DEMO_WALK = 'w_demo';
+const DEMO_LIMIT = 6;            // calls
+const DEMO_WINDOW_MINUTES = 10;
 const AUTOMATED_GUARD_SECONDS = 60;
 
 function nationalDigits(phone) {
@@ -82,7 +87,12 @@ const REASONS = {
   button: 'she pressed the emergency button',
   no_response: 'she stopped answering check-ins',
   checkin: 'she said she is not okay',
+  distress: 'she said she is hurt or in danger',
 };
+
+// What she said (from speech-to-text), safe to speak and to put in a URL: letters, digits, basic
+// punctuation, at most 80 characters.
+const cleanSaid = (s) => String(s ?? '').replace(/[^\p{L}\p{N} ',.?!-]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
 const reasonText = (r) => REASONS[r] || 'her safety alert went off';
 
 // Spoken numbers: "minus 74.1776" reads better than "-74.1776".
@@ -92,6 +102,32 @@ async function lastLocation(walkId) {
   if (!walkId) return null;
   const { rows } = await db.query('SELECT lat, lng, ts FROM locations WHERE walk_id = $1 ORDER BY ts DESC LIMIT 1', [walkId]);
   return rows[0] || null;
+}
+
+const isDemoWalkId = (id) => !id || id === DEMO_WALK || String(id).startsWith('w_local_');
+const cleanName = (s) => String(s ?? '').replace(/[^\p{L} '.-]/gu, '').trim().slice(0, 40);
+
+function demoWalk({ name, lat, lng } = {}) {
+  const la = Number(lat), ln = Number(lng);
+  const ok = Number.isFinite(la) && Number.isFinite(ln) && Math.abs(la) <= 90 && Math.abs(ln) <= 180 && !(la === 0 && ln === 0);
+  return { walk_id: DEMO_WALK, share_token: null, name: cleanName(name) || 'A Firefly user', demo: true,
+    demoLocation: ok ? { lat: la, lng: ln, ts: new Date() } : null };
+}
+
+async function demoCallAllowed() {
+  const { rows } = await db.query(
+    `SELECT count(*)::int AS n FROM walk_events
+      WHERE walk_id = $1 AND type = 'dispatch_call' AND ts > now() - make_interval(mins => $2)`,
+    [DEMO_WALK, DEMO_WINDOW_MINUTES],
+  );
+  return (rows[0] ? rows[0].n : 0) < DEMO_LIMIT;
+}
+
+// Her last position: from the walk's GPS pings, or the position a demo call carried.
+async function whereIs(walk) {
+  if (!walk) return null;
+  if (walk.demo) return walk.demoLocation;
+  return lastLocation(walk.walk_id);
 }
 
 async function loadWalkForDispatch(walkId) {
@@ -104,7 +140,7 @@ async function loadWalkForDispatch(walkId) {
 }
 
 // What the dispatcher hears first. Always says it's a simulation.
-function reportText({ name, reason, location, connecting }) {
+function reportText({ name, reason, location, connecting, said }) {
   const who = name || 'A Firefly user';
   let where = 'Her location is not known yet.';
   if (location) {
@@ -113,15 +149,22 @@ function reportText({ name, reason, location, connecting }) {
       (ageMin < 1 ? 'updated less than a minute ago.' : `updated ${ageMin} minute${ageMin === 1 ? '' : 's'} ago.`);
   }
   return `This is a Firefly demo emergency call. This is a simulation, not a real 9 1 1 call. ` +
-    `${who} may need help: ${reasonText(reason)}. ${where} A live map link has been texted to this number. ` +
+    `${who} may need help: ${reasonText(reason)}.${cleanSaid(said) ? ` She said: "${cleanSaid(said)}".` : ''} ${where} A live map link has been texted to this number. ` +
     (connecting ? 'Connecting you to her now.' : 'Her trusted contacts have also been alerted.');
 }
+
+const saidParam = (said) => (cleanSaid(said) ? `&said=${encodeURIComponent(cleanSaid(said))}` : '');
+// Demo calls carry her name and position to the whisper report.
+const demoParams = (walk) => (walk && walk.demo
+  ? `&name=${encodeURIComponent(walk.name)}${walk.demoLocation ? `&lat=${walk.demoLocation.lat}&lng=${walk.demoLocation.lng}` : ''}`
+  : '');
 
 const say = (text) => `<Say voice="alice">${escapeXml(text)}</Say>`;
 
 // TwiML for the in-app call: dial the dispatcher, whisper the report to them, then connect.
-function dialTwiml({ dispatch, walkId, reason, base }) {
-  const whisper = `${base}/api/voice/whisper?walk_id=${encodeURIComponent(walkId || '')}&reason=${encodeURIComponent(reason || '')}`;
+function dialTwiml({ dispatch, walk, reason, base, said }) {
+  const walkId = walk && walk.walk_id;
+  const whisper = `${base}/api/voice/whisper?walk_id=${encodeURIComponent(walkId || '')}&reason=${encodeURIComponent(reason || '')}${saidParam(said)}${demoParams(walk)}`;
   return '<?xml version="1.0" encoding="UTF-8"?><Response>' +
     `<Dial callerId="${escapeXml(process.env.TWILIO_FROM_NUMBER || '')}" answerOnBridge="true" timeout="30">` +
     `<Number url="${escapeXml(whisper)}">${escapeXml(dispatch)}</Number>` +
@@ -132,8 +175,9 @@ function dialTwiml({ dispatch, walkId, reason, base }) {
 
 // Vonage: the same call as dialTwiml, as an NCCO. onAnswer plays the report to the dispatcher
 // before connecting them to her.
-function connectNcco({ dispatch, walkId, reason, base }) {
-  const whisper = `${base}/api/voice/vonage/whisper?walk_id=${encodeURIComponent(walkId || '')}&reason=${encodeURIComponent(reason || '')}`;
+function connectNcco({ dispatch, walk, reason, base, said }) {
+  const walkId = walk && walk.walk_id;
+  const whisper = `${base}/api/voice/vonage/whisper?walk_id=${encodeURIComponent(walkId || '')}&reason=${encodeURIComponent(reason || '')}${saidParam(said)}${demoParams(walk)}`;
   return [{
     action: 'connect',
     from: vonage.digits(process.env.VONAGE_FROM_NUMBER),
@@ -148,25 +192,29 @@ const sayTwiml = (text, { repeat = false } = {}) => '<?xml version="1.0" encodin
 
 async function textDispatcher(walk, reason, base, log) {
   const dispatch = dispatchNumber();
-  if (!dispatch || !walk) return [];
+  if (!dispatch || !walk || !walk.share_token) return []; // demo walks have no tracking page
   const link = `${base}/track/${walk.share_token}`;
   return textAll([dispatch], `FIREFLY DEMO (simulated 911): ${walk.name || 'A Firefly user'} may need help (${reasonText(reason)}). Live location: ${link}`, log);
 }
 
 // Automated call: Twilio rings the dispatcher and reads the report. At most once a minute per walk.
 // Returns { called: bool, reason } and never throws.
-async function automatedDispatchCall(walk, { reason, base, log = console }) {
+async function automatedDispatchCall(walk, { reason, base, said, log = console }) {
   try {
     const dispatch = dispatchNumber();
     if (!dispatch) { log.error('Dispatch call refused: DISPATCH_NUMBER is missing or an emergency number'); return { called: false }; }
-    const { rowCount } = await db.query(
-      `UPDATE walks SET last_dispatch_at = now()
-        WHERE walk_id = $1 AND (last_dispatch_at IS NULL OR last_dispatch_at < now() - make_interval(secs => $2))`,
-      [walk.walk_id, AUTOMATED_GUARD_SECONDS],
-    );
-    if (!rowCount) return { called: false, duplicate: true };
+    if (walk.demo) {
+      if (!(await demoCallAllowed())) return { called: false, limited: true };
+    } else {
+      const { rowCount } = await db.query(
+        `UPDATE walks SET last_dispatch_at = now()
+          WHERE walk_id = $1 AND (last_dispatch_at IS NULL OR last_dispatch_at < now() - make_interval(secs => $2))`,
+        [walk.walk_id, AUTOMATED_GUARD_SECONDS],
+      );
+      if (!rowCount) return { called: false, duplicate: true };
+    }
 
-    const report = reportText({ name: walk.name, reason, location: await lastLocation(walk.walk_id), connecting: false });
+    const report = reportText({ name: walk.name, reason, said, location: await whereIs(walk), connecting: false });
     let placeCall;
     if (vonage.voiceConfigured()) {
       placeCall = vonage.createCall({ to: dispatch, ncco: talkNcco(report, { repeat: true }) }).then((c) => ({ sid: c.uuid }));
@@ -197,6 +245,7 @@ function isFromTwilio(request, params, base) {
 
 module.exports = {
   isEmergencyNumber, dispatchNumber, displayNumber, voiceAppConfigured, voiceToken, provider,
-  reportText, dialTwiml, sayTwiml, connectNcco, talkNcco, lastLocation, loadWalkForDispatch, textDispatcher,
+  reportText, dialTwiml, sayTwiml, connectNcco, talkNcco,
+  DEMO_WALK, isDemoWalkId, demoWalk, demoCallAllowed, whereIs, lastLocation, loadWalkForDispatch, textDispatcher,
   automatedDispatchCall, isFromTwilio, DEFAULT_DISPATCH_NUMBER,
 };

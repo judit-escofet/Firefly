@@ -131,3 +131,29 @@ test('duress: the automated call goes through Vonage to 312-826-2020 with the re
   assert.equal(body.ncco[0].loop, 2);
   assert.match(placed.init.headers.Authorization, /^Bearer ey/);
 });
+
+test('demo-mode call (walk only on the phone): carries her name, position and what she said', async () => {
+  responders = [[/count\(\*\)::int AS n FROM walk_events/, () => ({ rows: [{ n: 0 }] })]];
+  const tok = await call('voiceToken', { body: { walk_id: 'w_local_abc', name: 'Priya' } });
+  assert.equal(tok.status, 200);
+  assert.equal(decode(tok.jsonBody.token).sub, 'walker_w_demo');
+
+  const res = await call('vonageAnswer', { body: { uuid: 'u1', custom_data: { walk_id: 'w_local_abc', reason: 'distress', said: "I've been stabbed", name: 'Priya', lat: 40.742, lng: -74.1776 } } });
+  const whisper = new URL(res.jsonBody[0].endpoint[0].onAnswer.url);
+  assert.equal(whisper.searchParams.get('name'), 'Priya');
+  assert.equal(whisper.searchParams.get('said'), "I've been stabbed");
+  assert.ok(!fetched.some((f) => f.url.endsWith('/sms/json')), 'no tracking link to text for a demo walk');
+
+  const report = await call('vonageWhisper', { method: 'GET', query: Object.fromEntries(whisper.searchParams) });
+  assert.match(report.jsonBody[0].text, /Priya may need help: she said she is hurt or in danger\. She said: "I've been stabbed"\. Her last known location is latitude 40\.7420, longitude minus 74\.1776/);
+});
+
+test('demo-mode calls are limited: over the limit, the caller hears a message and nobody is dialled', async () => {
+  responders = [[/count\(\*\)::int AS n FROM walk_events/, () => ({ rows: [{ n: 6 }] })]];
+  const res = await call('vonageAnswer', { body: { uuid: 'u1', custom_data: { walk_id: 'w_demo', reason: 'button' } } });
+  assert.equal(res.jsonBody[0].action, 'talk');
+  assert.match(res.jsonBody[0].text, /too many demo emergency calls/);
+  const auto = await call('dispatch', { params: { walk_id: 'w_demo' }, body: { reason: 'button', name: 'Priya' } });
+  assert.deepEqual(auto.jsonBody, { ok: true, called: false, limited: true });
+  assert.ok(!fetched.some((f) => f.url.endsWith('/v1/calls')));
+});

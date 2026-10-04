@@ -39,11 +39,11 @@ describe('dispatch call (simulated 911)', () => {
     vi.useRealTimers();
   });
 
-  it('mock mode simulates the call on screen and dials nothing', async () => {
+  it('?dispatch=sim simulates the call on screen and dials nothing', async () => {
     vi.useFakeTimers();
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
-    vi.stubGlobal('window', { location: { search: '?mock=1' } });
+    vi.stubGlobal('window', { location: { search: '?mock=1&dispatch=sim' } });
     await startDispatchCall(WALK, { reason: 'scream' });
     vi.advanceTimersByTime(4000);
     expect(t.states.map((s) => s.state)).toEqual(['connecting', 'ringing', 'connected']);
@@ -62,20 +62,32 @@ describe('dispatch call (simulated 911)', () => {
     vi.stubGlobal('fetch', fetchSpy);
     await startDispatchCall(WALK, { reason: 'button' });
     expect(fetchSpy.mock.calls.map(([u]) => u)).toEqual(['/api/voice/token', '/api/walks/w_456/dispatch']);
-    expect(JSON.parse(fetchSpy.mock.calls[1][1].body)).toEqual({ reason: 'button' });
+    expect(JSON.parse(fetchSpy.mock.calls[1][1].body)).toEqual({ walk_id: 'w_456', reason: 'button' });
     expect(t.states.at(-1)).toMatchObject({ state: 'automated', mode: 'automated' });
   });
 
-  it('with no backend (offline walk), offers tap-to-call instead of doing nothing', async () => {
+  it('demo mode places a REAL call, sending her name, position and what she said', async () => {
+    vi.stubGlobal('window', { location: { search: '?mock=1' } });
+    vi.stubGlobal('localStorage', { getItem: (k) => (k === 'firefly.name' ? 'Priya' : null) });
+    const fetchSpy = vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}) }));
+    vi.stubGlobal('fetch', fetchSpy);
+    bus.emit('position.updated', { lat: 40.742, lng: -74.1776 });
+    await startDispatchCall({ walk_id: 'w_local_abc', offline: true }, { reason: 'distress', said: "I've been stabbed" });
+    const tokenBody = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    expect(fetchSpy.mock.calls[0][0]).toBe('/api/voice/token');
+    expect(tokenBody).toEqual({ walk_id: 'w_demo', reason: 'distress', said: "I've been stabbed", name: 'Priya', lat: 40.742, lng: -74.1776 });
+  });
+
+  it('with no backend at all, offers tap-to-call instead of doing nothing', async () => {
     vi.stubGlobal('window', { location: { search: '?mock=0' } });
-    vi.stubGlobal('fetch', vi.fn());
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline'); }));
     await startDispatchCall({ walk_id: 'w_local_abc', offline: true }, { reason: 'scream' });
     expect(t.states.at(-1)).toMatchObject({ state: 'failed', mode: 'dialer', tel: '+13128262020' });
   });
 
   it('never starts a second call while one is active', async () => {
     vi.useFakeTimers();
-    vi.stubGlobal('window', { location: { search: '?mock=1' } });
+    vi.stubGlobal('window', { location: { search: '?dispatch=sim' } });
     await startDispatchCall(WALK, { reason: 'scream' });
     await startDispatchCall(WALK, { reason: 'button' });
     expect(t.states.filter((s) => s.state === 'connecting')).toHaveLength(1);

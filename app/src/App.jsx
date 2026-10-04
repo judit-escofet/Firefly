@@ -50,11 +50,14 @@ export default function App({ modules }) {
   // Follow the Guardian's escalation state. When the countdown runs out ("alerted"), call the demo
   // dispatcher from the app. (A duress PIN never reaches "alerted" on screen; the backend calls
   // the dispatcher silently for that one.)
-  const lastDanger = useRef('scream');
+  // What started the alert, and (for "I've been stabbed"-style phrases) what she said.
+  const lastDanger = useRef({ source: 'scream', said: null });
   useEffect(() => {
     const offs = [
       bus.on('danger.signal', (e) => {
-        if (e.source) lastDanger.current = e.source;
+        if (!e.source) return;
+        const said = e.source === 'distress' ? /heard "(.*)"/.exec(e.detail ?? '')?.[1] ?? null : null;
+        lastDanger.current = { source: e.source, said };
       }),
       bus.on('alert.state', (e) => {
         setAlert({ state: e.state, seconds_left: e.seconds_left });
@@ -62,7 +65,7 @@ export default function App({ modules }) {
         if (e.state === 'alerted') {
           setShowCountdown(false);
           setAlerted(true);
-          if (walkRef.current) startDispatchCall(walkRef.current, { reason: lastDanger.current });
+          if (walkRef.current) startDispatchCall(walkRef.current, { reason: lastDanger.current.source, said: lastDanger.current.said });
         }
       }),
     ];

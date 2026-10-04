@@ -22,7 +22,8 @@ export const STATES = Object.freeze({
   RESOLVED: 'resolved',
 });
 
-const COUNTDOWN_SOURCES = new Set(['scream', 'code_phrase']);
+// distress: she said she's hurt or in danger ("I've been stabbed", "help me"): see distress.js.
+const COUNTDOWN_SOURCES = new Set(['scream', 'code_phrase', 'distress']);
 const CHECKIN_SOURCES = new Set(['long_stop', 'off_route']);
 
 const CHECKIN_PROMPTS = {

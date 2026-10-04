@@ -11,6 +11,7 @@ import { realClock } from './clock.js';
 import { createApi, isMockMode } from './api.js';
 import { createStateMachine } from './stateMachine.js';
 import { createCodePhraseSpotter, loadCodePhrase } from './codePhrase.js';
+import { createDistressSpotter } from './distress.js';
 import { createCheckinTriggers } from './checkins.js';
 import { createScoreLog } from './scoreLog.js';
 import { createClipBuffer, encodeWav } from './audio/clipBuffer.js';
@@ -65,6 +66,12 @@ export function startGuardian({
         confidence: Number(r.score.toFixed(3)),
         detail: `heard "${r.window}"`,
       }),
+  });
+
+  // "I've been stabbed", "I'm dying", "help me"... → the same 10 s countdown as a scream.
+  const distress = createDistressSpotter({
+    clock,
+    onMatch: ({ phrase }) => bus.emit('danger.signal', { source: 'distress', confidence: 1, detail: `heard "${phrase}"` }),
   });
 
   const triggers = createCheckinTriggers({ clock, onTrigger: (sig) => bus.emit('danger.signal', sig) });
@@ -128,7 +135,10 @@ export function startGuardian({
       startMic(); // emit walk.started from the "start walk" tap so iOS lets audio start
     },
     'position.updated': (e) => triggers.position(e),
-    'speech.heard': (e) => spotter.heard(e),
+    'speech.heard': (e) => {
+      spotter.heard(e);
+      distress.heard(e);
+    },
     'checkin.answered': (e) => sm.answer(e.ok),
     'pin.entered': (e) => sm.pin(e.kind),
     'danger.signal': (e) => sm.danger(e),

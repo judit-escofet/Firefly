@@ -22,6 +22,8 @@ function systemPrompt({ name, mode, memory = [], news = [], context = {} }) {
     '- Mention time to home now and then, using CONTEXT (e.g. "about 6 minutes to go").',
     '- Only mention news from NEWS below, naming the source. Never invent news.',
     '- Never lecture about safety. Never mention alerts, police, emergencies or danger.',
+    '- If she says she is hurt, harmed, bleeding, dying or needs help, never brush it off or tell her to keep walking:',
+    "  answer warmly and briefly that you are right here with her and staying with her (e.g. \"I'm right here with you. Stay with me.\"), then keep her talking.",
     `MODE: ${modeText}`,
     `MEMORY: ${memory.length ? memory.map((f) => `- ${f}`).join('\n') : '(nothing yet)'}`,
     `NEWS: ${news.length ? news.slice(0, 3).map((n) => `- ${n.title} (${n.source})`).join('\n') : '(none)'}`,
