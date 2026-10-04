@@ -1,0 +1,246 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" role="img" aria-label="Firefly system architecture">
+<title>Firefly system architecture</title>
+<defs>
+  <style>@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&amp;family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400&amp;display=swap');</style>
+  <radialGradient id="glow" cx="0.82" cy="0.05" r="0.7"><stop offset="0" stop-color="#ffd27a" stop-opacity="0.10"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a120f"/><stop offset="1" stop-color="#11211a"/></linearGradient>
+  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.035 0"/></filter>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#efe6d0" fill-opacity="0.75"/></marker>
+  <marker id="arrow-s" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 0 L0 5 L10 10 z" fill="#efe6d0" fill-opacity="0.75"/></marker>
+  <marker id="arrow-l" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#f6bd55"/></marker>
+  <marker id="arrow-l-s" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 0 L0 5 L10 10 z" fill="#f6bd55"/></marker>
+</defs>
+<rect x="0" y="0" width="1600" height="1000" rx="0" fill="url(#sky)" fill-opacity="1"/>
+<rect x="0" y="0" width="1600" height="1000" rx="0" fill="url(#glow)" fill-opacity="1"/>
+<rect width="1600" height="1000" filter="url(#grain)"/>
+<circle cx="54" cy="53" r="5" fill="#ffd27a"/><circle cx="54" cy="53" r="11" fill="#ffd27a" opacity="0.2"/>
+<text x="68" y="58" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#f6bd55" font-weight="700" text-anchor="start" letter-spacing="2">SYSTEM ARCHITECTURE</text>
+<text x="48" y="104" font-family="Fraunces, Georgia, serif" font-size="40" fill="#f7f1e3" font-weight="500" text-anchor="start">How Firefly walks her home</text>
+<text x="48" y="136" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="17" fill="#a9b8a0" font-weight="400" text-anchor="start">Everything that listens for danger runs on her phone. The cloud talks, texts and tracks.</text>
+<rect x="40" y="165" width="830" height="655" rx="28" fill="#111d18" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.1" stroke-width="1"/>
+<g transform="translate(64 186) scale(0.8333333333333334)" fill="none" stroke="#a9b8a0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"></rect><path d="M12 18h.01"></path></g>
+<text x="92" y="202" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="700" text-anchor="start" letter-spacing="1.6">ON HER PHONE</text>
+<text x="210" y="202" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#869683" font-weight="400" text-anchor="start">·  the Firefly web app (React), opened from a link</text>
+<rect x="538" y="182" width="312" height="28" rx="14" fill="#86b878" fill-opacity="0.12" stroke="#86b878" stroke-opacity="0.5" stroke-width="1"/>
+<g transform="translate(550 187) scale(0.75)" fill="none" stroke="#86b878" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></g>
+<text x="574" y="201" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#86b878" font-weight="700" text-anchor="start">Scream detection never leaves the phone</text>
+<circle cx="185" cy="472" r="46" fill="#1b2c25" stroke="#f6bd55" stroke-opacity="0.55" stroke-width="1.5"/>
+<circle cx="185" cy="458" r="12" fill="none" stroke="#e9dcc0" stroke-width="2"/>
+<path d="M163 494 C166 478 204 478 207 494" fill="none" stroke="#e9dcc0" stroke-width="2" stroke-linecap="round"/>
+<text x="185" y="545" font-family="Fraunces, Georgia, serif" font-size="21" fill="#f7f1e3" font-weight="500" text-anchor="middle">Her</text>
+<text x="185" y="566" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="middle">walks and talks</text>
+<circle cx="226" cy="436" r="17" fill="#ffd27a" opacity="0.18"/>
+<circle cx="226" cy="436" r="13" fill="#f6bd55"/>
+<text x="226" y="440.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#0c1511" font-weight="700" text-anchor="middle">1</text>
+<rect x="70" y="232" width="230" height="124" rx="16" fill="#1b2c25" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.12" stroke-width="1"/>
+<g transform="translate(90 250) scale(1.0833333333333333)" fill="none" stroke="#f6bd55" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19v3"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><rect x="9" y="2" width="6" height="13" rx="3"></rect></g>
+<text x="90" y="302" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="17" fill="#f7f1e3" font-weight="700" text-anchor="start">One shared mic</text>
+<text x="90" y="323" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a0" font-weight="400" text-anchor="start">opened inside her tap</text>
+<text x="90" y="340" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a0" font-weight="400" text-anchor="start">16 kHz to both modules</text>
+<path d="M185 424 V362" fill="none" stroke="#efe6d0" stroke-opacity="0.55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="149.65" y="383" width="70.69999999999999" height="19" rx="9" fill="#0c1511" fill-opacity="0.92"/>
+<text x="185.0" y="397" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="700" text-anchor="middle">her voice</text>
+<rect x="340" y="232" width="500" height="182" rx="16" fill="#1b2c25" fill-opacity="1" stroke="#f6bd55" stroke-opacity="0.45" stroke-width="1"/>
+<rect x="340" y="252" width="5" height="140" rx="2.5" fill="#f6bd55" fill-opacity="1"/>
+<rect x="362" y="248" width="34" height="22" rx="11" fill="#f6bd55" fill-opacity="1"/>
+<text x="379.0" y="263.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#0c1511" font-weight="700" text-anchor="middle">P1</text>
+<text x="406" y="265" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif"><tspan font-size="19" font-weight="700" fill="#f7f1e3">Companion</tspan><tspan font-size="15" fill="#a9b8a0" dx="6">· keeps her company</tspan></text>
+<circle cx="812" cy="262" r="17" fill="#ffd27a" opacity="0.18"/>
+<circle cx="812" cy="262" r="13" fill="#f6bd55"/>
+<text x="812" y="266.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#0c1511" font-weight="700" text-anchor="middle">2</text>
+<rect x="362" y="290" width="144" height="108" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(374 302) scale(0.9166666666666666)" fill="none" stroke="#f6bd55" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"></path><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4"></path></g>
+<text x="374" y="343" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Voice gate</text>
+<text x="374" y="360" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">only her voice,</text>
+<text x="374" y="375" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">not the street</text>
+<rect x="522" y="290" width="144" height="108" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(534 302) scale(0.9166666666666666)" fill="none" stroke="#f6bd55" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10v3"></path><path d="M6 6v11"></path><path d="M10 3v18"></path><path d="M14 8v7"></path><path d="M18 5v13"></path><path d="M22 10v3"></path></g>
+<text x="534" y="343" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Live transcript</text>
+<text x="534" y="360" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">Gemini Live,</text>
+<text x="534" y="375" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">~0.2 s after she stops</text>
+<rect x="682" y="290" width="144" height="108" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(694 302) scale(0.9166666666666666)" fill="none" stroke="#f6bd55" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"></path><path d="M7.828 13.07A3 3 0 0 1 12 8.764a3 3 0 0 1 5.004 2.224 3 3 0 0 1-.832 2.083l-3.447 3.62a1 1 0 0 1-1.45-.001z"></path></g>
+<text x="694" y="343" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Reply out loud</text>
+<text x="694" y="360" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">1–2 warm sentences,</text>
+<text x="694" y="375" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">the firefly&#x27;s voice</text>
+<path d="M508 344 H520" fill="none" stroke="#f6bd55" stroke-opacity="0.9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)"/>
+<path d="M668 344 H680" fill="none" stroke="#f6bd55" stroke-opacity="0.9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)"/>
+<rect x="340" y="436" width="500" height="198" rx="16" fill="#1b2c25" fill-opacity="1" stroke="#86b878" stroke-opacity="0.45" stroke-width="1"/>
+<rect x="340" y="456" width="5" height="158" rx="2.5" fill="#86b878" fill-opacity="1"/>
+<rect x="362" y="452" width="34" height="22" rx="11" fill="#86b878" fill-opacity="1"/>
+<text x="379.0" y="467.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#0c1511" font-weight="700" text-anchor="middle">P2</text>
+<text x="406" y="469" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif"><tspan font-size="19" font-weight="700" fill="#f7f1e3">Guardian</tspan><tspan font-size="15" fill="#a9b8a0" dx="6">· listens for trouble</tspan></text>
+<circle cx="815" cy="462" r="17" fill="#ffd27a" opacity="0.18"/>
+<circle cx="815" cy="462" r="13" fill="#f6bd55"/>
+<text x="815" y="466.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#0c1511" font-weight="700" text-anchor="middle">3</text>
+<rect x="362" y="492" width="144" height="98" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(374 504) scale(0.9166666666666666)" fill="none" stroke="#86b878" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></g>
+<text x="374" y="545" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Scream model</text>
+<text x="374" y="562" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">YAMNet + our</text>
+<text x="374" y="577" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">classifier, on-device</text>
+<rect x="522" y="492" width="144" height="98" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(534 504) scale(0.9166666666666666)" fill="none" stroke="#86b878" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></g>
+<text x="534" y="545" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Code phrase</text>
+<text x="534" y="562" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">a sentence she&#x27;d</text>
+<text x="534" y="577" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">say anyway</text>
+<rect x="682" y="492" width="144" height="98" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(694 504) scale(0.9166666666666666)" fill="none" stroke="#86b878" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M22 8c0-2.3-.8-4.3-2-6"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path><path d="M4 2C2.8 3.7 2 5.7 2 8"></path></g>
+<text x="694" y="545" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Check-ins</text>
+<text x="694" y="562" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">stopped too long</text>
+<text x="694" y="577" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">or off route</text>
+<g transform="translate(362 600) scale(0.75)" fill="none" stroke="#86b878" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"></line><line x1="12" x2="15" y1="14" y2="11"></line><circle cx="12" cy="14" r="8"></circle></g>
+<text x="388" y="614" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif"><tspan font-size="13" font-weight="700" fill="#f7f1e3">10-second quiet countdown</tspan><tspan font-size="12.5" fill="#a9b8a0" dx="6">· PIN cancels · any other code = silent alarm</tspan></text>
+<path d="M300 268 H340" fill="none" stroke="#f6bd55" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)"/>
+<path d="M300 330 C322 330 318 541 340 541" fill="none" stroke="#86b878" stroke-opacity="0.8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="70" y="656" width="770" height="40" rx="20" fill="#f6bd55" fill-opacity="0.12" stroke="#f6bd55" stroke-opacity="0.55" stroke-width="1"/>
+<text x="455" y="681" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#ffe4a6" font-weight="700" text-anchor="middle">Event bus   ·   walk.started · speech.heard · danger.signal · alert.state · pin.entered</text>
+<path d="M590 634 V656" stroke="#efe6d0" stroke-opacity="0.35" stroke-width="1.5"/>
+<path d="M455 696 V712" stroke="#efe6d0" stroke-opacity="0.35" stroke-width="1.5"/>
+<rect x="70" y="712" width="770" height="86" rx="16" fill="#1b2c25" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.12" stroke-width="1"/>
+<rect x="70" y="730" width="5" height="50" rx="2.5" fill="#a9b8a0" fill-opacity="1"/>
+<rect x="92" y="726" width="34" height="22" rx="11" fill="#a9b8a0" fill-opacity="1"/>
+<text x="109.0" y="741.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#0c1511" font-weight="700" text-anchor="middle">P4</text>
+<text x="138" y="743" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif"><tspan font-size="18" font-weight="700" fill="#f7f1e3">App</tspan><tspan font-size="14" fill="#a9b8a0" dx="6">· what she sees</tspan></text>
+<text x="92" y="776" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a0" font-weight="400" text-anchor="start">Lantern route with turn-by-turn  ·  GPS every 5 s  ·  calm countdown screen  ·  live mic meter  ·  demo mode</text>
+<rect x="930" y="165" width="310" height="655" rx="28" fill="#111d18" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.1" stroke-width="1"/>
+<g transform="translate(952 186) scale(0.8333333333333334)" fill="none" stroke="#a9b8a0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></g>
+<text x="980" y="202" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="700" text-anchor="start" letter-spacing="1.6">IN THE CLOUD</text>
+<text x="952" y="224" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#869683" font-weight="400" text-anchor="start">One AWS Lambda behind one HTTPS link</text>
+<rect x="950" y="244" width="270" height="74" rx="14" fill="#1b2c25" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.12" stroke-width="1"/>
+<g transform="translate(968 258) scale(0.9166666666666666)" fill="none" stroke="#a9b8a0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></g>
+<text x="1000" y="275" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#f7f1e3" font-weight="700" text-anchor="start">Serves the app</text>
+<text x="968" y="298" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">screens, scripts, the scream model</text>
+<rect x="950" y="334" width="270" height="92" rx="14" fill="#1b2c25" fill-opacity="1" stroke="#f6bd55" stroke-opacity="0.45" stroke-width="1"/>
+<rect x="950" y="348" width="4" height="64" rx="2" fill="#f6bd55" fill-opacity="1"/>
+<g transform="translate(968 348) scale(0.9166666666666666)" fill="none" stroke="#f6bd55" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V5"></path><path d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4"></path><path d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5"></path><path d="M17.997 5.125a4 4 0 0 1 2.526 5.77"></path><path d="M18 18a4 4 0 0 0 2-7.464"></path><path d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517"></path><path d="M6 18a4 4 0 0 1-2-7.464"></path><path d="M6.003 5.125a4 4 0 0 0-2.526 5.77"></path></g>
+<text x="1000" y="365" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#f7f1e3" font-weight="700" text-anchor="start">Companion API</text>
+<text x="968" y="388" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">replies · voice · news</text>
+<text x="968" y="404" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">short-lived transcription token</text>
+<rect x="950" y="442" width="270" height="112" rx="14" fill="#1b2c25" fill-opacity="1" stroke="#e9dcc0" stroke-opacity="0.45" stroke-width="1"/>
+<rect x="950" y="456" width="4" height="84" rx="2" fill="#e9dcc0" fill-opacity="1"/>
+<g transform="translate(968 456) scale(0.9166666666666666)" fill="none" stroke="#e9dcc0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"></rect><rect width="20" height="8" x="2" y="14" rx="2" ry="2"></rect><line x1="6" x2="6.01" y1="6" y2="6"></line><line x1="6" x2="6.01" y1="18" y2="18"></line></g>
+<text x="1000" y="473" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#f7f1e3" font-weight="700" text-anchor="start">Walks &amp; alerts API</text>
+<text x="968" y="496" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">route + ETA from her GPS</text>
+<text x="968" y="512" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">off-route and stop checks</text>
+<text x="968" y="528" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">alerts → texts and 10-s clip</text>
+<text x="1178" y="473" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#e9dcc0" font-weight="700" text-anchor="start">P3</text>
+<rect x="950" y="570" width="270" height="74" rx="14" fill="#1b2c25" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.12" stroke-width="1"/>
+<g transform="translate(968 584) scale(0.9166666666666666)" fill="none" stroke="#a9b8a0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"></path><path d="M15 5.764v15"></path><path d="M9 3.236v15"></path></g>
+<text x="1000" y="601" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#f7f1e3" font-weight="700" text-anchor="start">Live tracking page</text>
+<text x="968" y="624" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">a private link for her people</text>
+<g transform="translate(952 668) scale(0.75)" fill="none" stroke="#869683" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle></g>
+<text x="978" y="682" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">API keys stay on the server.</text>
+<text x="978" y="699" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">The phone only gets a token</text>
+<text x="978" y="716" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">that expires in minutes.</text>
+<g transform="translate(952 742) scale(0.75)" fill="none" stroke="#869683" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"></path><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"></path><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"></path><path d="m2 2 20 20"></path></g>
+<text x="978" y="756" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">No audio is stored, except</text>
+<text x="978" y="773" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#a9b8a0" font-weight="400" text-anchor="start">a 10-s clip when an alert fires.</text>
+<rect x="1290" y="165" width="270" height="475" rx="28" fill="#111d18" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.1" stroke-width="1"/>
+<g transform="translate(1312 186) scale(0.8333333333333334)" fill="none" stroke="#a9b8a0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z"></path></g>
+<text x="1340" y="202" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="700" text-anchor="start" letter-spacing="1.6">SERVICES</text>
+<text x="1310" y="232" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11" fill="#869683" font-weight="700" text-anchor="start" letter-spacing="1.4">AI &amp; VOICE</text>
+<rect x="1308" y="242" width="234" height="48" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(1322 255) scale(0.9166666666666666)" fill="none" stroke="#f6bd55" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V5"></path><path d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4"></path><path d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5"></path><path d="M17.997 5.125a4 4 0 0 1 2.526 5.77"></path><path d="M18 18a4 4 0 0 0 2-7.464"></path><path d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517"></path><path d="M6 18a4 4 0 0 1-2-7.464"></path><path d="M6.003 5.125a4 4 0 0 0-2.526 5.77"></path></g>
+<text x="1356" y="263" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Gemini 3.5 Flash</text>
+<text x="1356" y="280" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">replies, memory, check-ins</text>
+<rect x="1308" y="296" width="234" height="48" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(1322 309) scale(0.9166666666666666)" fill="none" stroke="#f6bd55" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10v3"></path><path d="M6 6v11"></path><path d="M10 3v18"></path><path d="M14 8v7"></path><path d="M18 5v13"></path><path d="M22 10v3"></path></g>
+<text x="1356" y="317" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Gemini Live</text>
+<text x="1356" y="334" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">live transcription</text>
+<rect x="1308" y="350" width="234" height="48" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(1322 363) scale(0.9166666666666666)" fill="none" stroke="#f6bd55" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"></path></g>
+<text x="1356" y="371" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">ElevenLabs</text>
+<text x="1356" y="388" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">the firefly&#x27;s voice</text>
+<text x="1310" y="424" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11" fill="#869683" font-weight="700" text-anchor="start" letter-spacing="1.4">DATA &amp; MAPS</text>
+<rect x="1308" y="434" width="234" height="48" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(1322 447) scale(0.9166666666666666)" fill="none" stroke="#e9dcc0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5V19A9 3 0 0 0 21 19V5"></path><path d="M3 12A9 3 0 0 0 21 12"></path></g>
+<text x="1356" y="455" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Tiger Data</text>
+<text x="1356" y="472" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">Postgres: walks, memories</text>
+<rect x="1308" y="488" width="234" height="48" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(1322 501) scale(0.9166666666666666)" fill="none" stroke="#e9dcc0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"></circle><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path><circle cx="18" cy="5" r="3"></circle></g>
+<text x="1356" y="509" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Amazon Location · OSM</text>
+<text x="1356" y="526" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">walking routes</text>
+<text x="1310" y="562" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11" fill="#869683" font-weight="700" text-anchor="start" letter-spacing="1.4">MESSAGING</text>
+<rect x="1308" y="572" width="234" height="48" rx="12" fill="#15231d" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.08" stroke-width="1"/>
+<g transform="translate(1322 585) scale(0.9166666666666666)" fill="none" stroke="#e9dcc0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path><path d="m21.854 2.147-10.94 10.939"></path></g>
+<text x="1356" y="593" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13.5" fill="#f7f1e3" font-weight="700" text-anchor="start">Twilio / Vonage</text>
+<text x="1356" y="610" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="400" text-anchor="start">texts · demo dispatch call</text>
+<rect x="1290" y="660" width="270" height="160" rx="28" fill="#111d18" fill-opacity="1" stroke="#f6bd55" stroke-opacity="0.35" stroke-width="1"/>
+<g transform="translate(1312 680) scale(0.9166666666666666)" fill="none" stroke="#f6bd55" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><path d="M16 3.128a4 4 0 0 1 0 7.744"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><circle cx="9" cy="7" r="4"></circle></g>
+<text x="1344" y="697" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#f6bd55" font-weight="700" text-anchor="start" letter-spacing="1.6">HER PEOPLE</text>
+<circle cx="1532" cy="690" r="17" fill="#ffd27a" opacity="0.18"/>
+<circle cx="1532" cy="690" r="13" fill="#f6bd55"/>
+<text x="1532" y="694.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#0c1511" font-weight="700" text-anchor="middle">5</text>
+<circle cx="1318" cy="729" r="3" fill="#f6bd55"/>
+<text x="1330" y="733" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#efe6d0" font-weight="400" text-anchor="start">Text: &quot;Priya started walking&quot;</text>
+<circle cx="1318" cy="753" r="3" fill="#f6bd55"/>
+<text x="1330" y="757" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#efe6d0" font-weight="400" text-anchor="start">Alert: live location + clip</text>
+<circle cx="1318" cy="777" r="3" fill="#f6bd55"/>
+<text x="1330" y="781" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#efe6d0" font-weight="400" text-anchor="start">Text: &quot;home safe&quot;</text>
+<text x="1312" y="806" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#869683" font-weight="400" text-anchor="start">up to 3 trusted contacts</text>
+<path d="M840 300 C890 300 900 372 950 372" fill="none" stroke="#f6bd55" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)" marker-start="url(#arrow-l-s)"/>
+<rect x="832.45" y="305" width="121.1" height="19" rx="9" fill="#0c1511" fill-opacity="0.92"/>
+<text x="893.0" y="319" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="700" text-anchor="middle">her words / reply</text>
+<path d="M840 246 H900 V150 H1270 V320 H1308" fill="none" stroke="#f6bd55" stroke-opacity="0.75" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)" stroke-dasharray="5 6"/>
+<rect x="929.95" y="137" width="310.09999999999997" height="19" rx="9" fill="#0c1511" fill-opacity="0.92"/>
+<text x="1085.0" y="151" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#ffd27a" font-weight="700" text-anchor="middle">live audio · only her voice · short-lived token</text>
+<path d="M840 560 C892 560 898 500 950 500" fill="none" stroke="#e9dcc0" stroke-opacity="0.8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="849.2" y="535" width="89.6" height="19" rx="9" fill="#0c1511" fill-opacity="0.92"/>
+<text x="894.0" y="549" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="700" text-anchor="middle">alert + clip</text>
+<circle cx="894" cy="588" r="17" fill="#ffd27a" opacity="0.18"/>
+<circle cx="894" cy="588" r="13" fill="#f6bd55"/>
+<text x="894" y="592.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#0c1511" font-weight="700" text-anchor="middle">4</text>
+<path d="M840 752 C900 752 905 528 950 528" fill="none" stroke="#efe6d0" stroke-opacity="0.5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" marker-start="url(#arrow-s)"/>
+<rect x="853.35" y="695" width="83.3" height="19" rx="9" fill="#0c1511" fill-opacity="0.92"/>
+<text x="895.0" y="709" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="700" text-anchor="middle">GPS / route</text>
+<path d="M1220 362 C1260 362 1270 266 1308 266" fill="none" stroke="#f6bd55" stroke-opacity="0.7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)"/>
+<path d="M1220 386 C1262 386 1270 374 1308 374" fill="none" stroke="#f6bd55" stroke-opacity="0.7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)"/>
+<path d="M1220 476 C1262 476 1270 458 1308 458" fill="none" stroke="#e9dcc0" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1220 500 C1262 500 1270 512 1308 512" fill="none" stroke="#e9dcc0" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1220 524 C1265 524 1268 596 1308 596" fill="none" stroke="#e9dcc0" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1425 620 V660" fill="none" stroke="#f6bd55" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)"/>
+<path d="M1290 780 C1262 780 1262 607 1220 607" fill="none" stroke="#efe6d0" stroke-opacity="0.5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1216.5" y="687" width="77.0" height="19" rx="9" fill="#0c1511" fill-opacity="0.92"/>
+<text x="1255.0" y="701" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="11.5" fill="#a9b8a0" font-weight="700" text-anchor="middle">opens link</text>
+<rect x="40" y="846" width="291" height="112" rx="18" fill="#1b2c25" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.1" stroke-width="1"/>
+<circle cx="70" cy="878" r="17" fill="#ffd27a" opacity="0.18"/>
+<circle cx="70" cy="878" r="13" fill="#f6bd55"/>
+<text x="70" y="882.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#0c1511" font-weight="700" text-anchor="middle">1</text>
+<text x="94" y="884" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#f7f1e3" font-weight="700" text-anchor="start">Walk with me</text>
+<text x="62" y="916" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="start">She picks home and taps once.</text>
+<text x="62" y="935" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="start">The mic opens, the route lights up.</text>
+<path d="M333 902 H345" fill="none" stroke="#f6bd55" stroke-opacity="0.8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)"/>
+<rect x="347" y="846" width="291" height="112" rx="18" fill="#1b2c25" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.1" stroke-width="1"/>
+<circle cx="377" cy="878" r="17" fill="#ffd27a" opacity="0.18"/>
+<circle cx="377" cy="878" r="13" fill="#f6bd55"/>
+<text x="377" y="882.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#0c1511" font-weight="700" text-anchor="middle">2</text>
+<text x="401" y="884" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#f7f1e3" font-weight="700" text-anchor="start">Company on the way</text>
+<text x="369" y="916" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="start">The firefly chats out loud. Only</text>
+<text x="369" y="935" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="start">her voice is sent to transcribe.</text>
+<path d="M640 902 H652" fill="none" stroke="#f6bd55" stroke-opacity="0.8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)"/>
+<rect x="654" y="846" width="291" height="112" rx="18" fill="#1b2c25" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.1" stroke-width="1"/>
+<circle cx="684" cy="878" r="17" fill="#ffd27a" opacity="0.18"/>
+<circle cx="684" cy="878" r="13" fill="#f6bd55"/>
+<text x="684" y="882.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#0c1511" font-weight="700" text-anchor="middle">3</text>
+<text x="708" y="884" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#f7f1e3" font-weight="700" text-anchor="start">Something feels wrong</text>
+<text x="676" y="916" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="start">A scream, her code phrase or no</text>
+<text x="676" y="935" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="start">answer starts a quiet countdown.</text>
+<path d="M947 902 H959" fill="none" stroke="#f6bd55" stroke-opacity="0.8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)"/>
+<rect x="961" y="846" width="291" height="112" rx="18" fill="#1b2c25" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.1" stroke-width="1"/>
+<circle cx="991" cy="878" r="17" fill="#ffd27a" opacity="0.18"/>
+<circle cx="991" cy="878" r="13" fill="#f6bd55"/>
+<text x="991" y="882.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#0c1511" font-weight="700" text-anchor="middle">4</text>
+<text x="1015" y="884" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#f7f1e3" font-weight="700" text-anchor="start">PIN, or not</text>
+<text x="983" y="916" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="start">Her PIN cancels. Any other code</text>
+<text x="983" y="935" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="start">looks the same but calls for help.</text>
+<path d="M1254 902 H1266" fill="none" stroke="#f6bd55" stroke-opacity="0.8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-l)"/>
+<rect x="1268" y="846" width="291" height="112" rx="18" fill="#1b2c25" fill-opacity="1" stroke="#efe6d0" stroke-opacity="0.1" stroke-width="1"/>
+<circle cx="1298" cy="878" r="17" fill="#ffd27a" opacity="0.18"/>
+<circle cx="1298" cy="878" r="13" fill="#f6bd55"/>
+<text x="1298" y="882.5" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#0c1511" font-weight="700" text-anchor="middle">5</text>
+<text x="1322" y="884" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#f7f1e3" font-weight="700" text-anchor="start">Help, quietly</text>
+<text x="1290" y="916" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="start">Her people get a text with her live</text>
+<text x="1290" y="935" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#a9b8a0" font-weight="400" text-anchor="start">location and a 10-second clip.</text>
+<text x="40" y="986" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#869683" font-weight="400" text-anchor="start">Solid lines: requests and data  ·  dashed: live audio stream  ·  Firefly never calls real 911 (the dispatch call goes to a demo number)</text>
+<text x="1560" y="986" font-family="'Atkinson Hyperlegible', 'Helvetica Neue', Arial, sans-serif" font-size="12" fill="#869683" font-weight="400" text-anchor="end">GirlHacks 2026 · Team Firefly</text>
+</svg>

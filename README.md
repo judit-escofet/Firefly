@@ -16,6 +16,8 @@ Built for GirlHacks 2026 by Team Firefly.
 
 ## How it fits together
 
+![How Firefly works: her phone, the cloud, services and her people](docs/architecture.png)
+
 ```
  phone browser (app/)                                       server (api/), one AWS Lambda
 ┌──────────────────────────────────────────────┐            ┌──────────────────────────────────┐
@@ -46,7 +48,8 @@ The app's modules never call each other directly. They publish and subscribe to 
 | `deploy/aws/deploy.sh` | Deploys the app and API together as one Lambda with an HTTPS function URL |
 | `deploy-aws.ps1`, `deploy-workshop.ps1`, `deploy.ps1`, `template.yaml` | Other ways to deploy (Windows wrapper, sandbox, full SAM stack) |
 | `presentation/` | The looping pitch video (`slides.html` → `render.py` → `firefly-loop.mp4`) |
-| `firefly-architecture.drawio` | Architecture diagram |
+| [`docs/architecture.svg`](docs/architecture.svg) | Architecture diagram for judges (PNG: `docs/architecture.png`) |
+| `firefly-architecture.drawio` | Older, more detailed diagram from the Azure plan (out of date) |
 
 ## Quick start
 
