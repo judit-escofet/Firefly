@@ -54,7 +54,9 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
       const st = mic?.stats;
       // Only digital silence for a few seconds = the phone isn't giving us the mic at all.
       const silent = st && st.chunks > 60 && st.zeroChunks === st.chunks;
-      if (/error|denied/i.test(stt) || g === 'error' || silent) setListening('mic off');
+      if (/denied/i.test(stt)) setListening('mic off');
+      else if (mic?.stalled || silent) setListening('stuck');
+      else if (/error/i.test(stt) || g === 'error') setListening('mic off');
       else if (stt === 'listening' || /mock/.test(stt) || g === 'classifier' || g === 'yamnet-only') setListening('listening');
       else setListening('starting');
       // Meter: input level in dB, -60 dB (silence) .. -12 dB (talking close to the phone) → 0..1.
@@ -117,11 +119,16 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
               <span className="text-base text-lichen-300"> {remainingUnit}</span>
             </p>
             <div className="flex flex-col items-end min-w-0 pb-0.5">
-              <button type="button" onClick={() => setShowDiag((v) => !v)} aria-label="Microphone status"
-                className={`flex items-center gap-1.5 text-[0.8125rem] ${listening === 'listening' ? 'text-moss-300' : listening === 'mic off' ? 'text-ember-400' : 'text-lichen-400'}`}>
+              <button type="button" aria-label="Microphone status"
+                onClick={() => {
+                  // Inside a tap iOS lets audio start: wake a stalled mic, and show what it's doing.
+                  currentMic()?.revive?.();
+                  if (listening !== 'stuck') setShowDiag((v) => !v);
+                }}
+                className={`flex items-center gap-1.5 text-[0.8125rem] ${listening === 'listening' ? 'text-moss-300' : listening === 'mic off' ? 'text-ember-400' : listening === 'stuck' ? 'text-lantern-300' : 'text-lichen-400'}`}>
                 {listening === 'mic off' ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                {listening === 'listening' ? 'Listening' : listening === 'mic off' ? "Can't hear you" : 'Starting…'}
-                {listening !== 'mic off' && (
+                {listening === 'listening' ? 'Listening' : listening === 'mic off' ? "Can't hear you" : listening === 'stuck' ? 'Tap to wake the mic' : 'Starting…'}
+                {(listening === 'listening' || listening === 'starting') && (
                   // Live level: proof the phone is actually giving us sound.
                   <span className="flex items-end gap-[2px] h-3 ml-0.5" aria-hidden="true">
                     {[0.15, 0.4, 0.65, 0.9].map((th, i) => (
