@@ -74,7 +74,7 @@ export default function DemoControls({ activeScreen, canWalk, onWalkWithTestAudi
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-grove-900/90 hover:bg-grove-800 border border-moss-400/40 text-sage-200 text-xs font-medium shadow-grove-glow backdrop-blur-md active:scale-95 transition-all"
           aria-expanded={isOpen}
         >
-          <Sparkles className="w-3.5 h-3.5 text-firefly-400" />
+          <Terminal className="w-3.5 h-3.5 text-lichen-300" />
           <span>Demo{isMock ? ' (mock)' : ''}</span>
           {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-sage-300" /> : <ChevronDown className="w-3.5 h-3.5 text-sage-300" />}
         </button>

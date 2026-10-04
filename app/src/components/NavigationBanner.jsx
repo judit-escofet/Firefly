@@ -37,30 +37,25 @@ export default function NavigationBanner({ children }) {
   const dist = showTurn && Number.isFinite(nav.distance_m) ? formatDistance(nav.distance_m) : null;
 
   return (
-    <div className="rounded-3xl overflow-hidden shadow-2xl border border-white/15 glass-mythic-card" role="status" aria-live="polite" aria-label="Next direction">
+    <div className="rounded-2xl overflow-hidden surface" role="status" aria-live="polite" aria-label="Next direction">
       {showTurn && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-emerald-800/95 text-white">
-          <div className="w-12 h-12 shrink-0 rounded-2xl bg-emerald-950/40 flex items-center justify-center">
-            {nav.rerouting ? <Loader2 className="w-7 h-7 animate-spin" /> : <TurnIcon type={nav.type} modifier={nav.modifier} className="w-8 h-8 stroke-[2.5]" />}
+        <div className="flex items-center gap-3 px-4 py-3 bg-night-700 text-parchment-50 border-b border-parchment-100/10">
+          <div className="w-11 h-11 shrink-0 rounded-xl bg-lantern-400 text-night-950 flex items-center justify-center">
+            {nav.rerouting ? <Loader2 className="w-6 h-6 animate-spin" /> : <TurnIcon type={nav.type} modifier={nav.modifier} className="w-7 h-7 stroke-[2.5]" />}
           </div>
           <div className="min-w-0 flex-1">
             {nav.rerouting ? (
-              <div className="text-lg font-bold">Rerouting…</div>
+              <div className="text-lg font-bold">Finding a new way…</div>
             ) : (
               <>
-                {dist && (
-                  <div className="text-2xl font-extrabold leading-none tracking-tight">
-                    {dist.value} <span className="text-base font-semibold">{dist.unit}</span>
-                  </div>
-                )}
-                <div className="text-sm font-semibold leading-snug mt-0.5 truncate">{nav.text}</div>
+                <div className="text-[17px] font-bold leading-snug truncate">{nav.text}</div>
+                {dist && <div className="text-[14px] text-lichen-200">in {dist.value} {dist.unit}{nav.then ? <span className="text-lichen-400"> · then {nav.then.replace(/^then\s+/i, '')}</span> : null}</div>}
               </>
             )}
-            {nav.then && !nav.rerouting && <div className="text-[11px] text-emerald-100/90 truncate mt-0.5">{nav.then}</div>}
           </div>
         </div>
       )}
-      {children && <div className="px-4 py-2.5">{children}</div>}
+      {children && <div className="px-4 py-3">{children}</div>}
     </div>
   );
 }

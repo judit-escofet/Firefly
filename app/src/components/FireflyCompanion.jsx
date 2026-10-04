@@ -1,221 +1,65 @@
-import React, { useState } from 'react';
-import { Sparkles, Heart } from 'lucide-react';
+import React from 'react';
 
 /**
- * Mythical Forest Spirit (Firefly Companion)
- * Features:
- * - 4-winged ethereal fairy flutter with luminous filament veins
- * - Celestial starlight bioluminescent heart that breathes and glows
- * - 3 orbiting stardust fae motes circling in mystical orbits
- * - Radiant starlight shockwaves when speaking (Criterion A5)
- * - Friendly interactive click with whimsical sparkle burst
+ * The firefly: a small round bug with a lantern tail. It drifts lazily and its tail glows
+ * brightly only while it's speaking (A5); otherwise it smoulders. What it says appears in a
+ * parchment note above it, so its words look different from the app's own text.
  */
-export default function FireflyCompanion({
-  isSpeaking = false,
-  message = null,
-  size = 'md', // 'sm' | 'md' | 'lg'
-  onClick = null,
-  friendlyNote = null
-}) {
-  const [sparkleActive, setSparkleActive] = useState(false);
-
-  const sizeClasses = {
-    sm: 'w-12 h-12',
-    md: 'w-20 h-20',
-    lg: 'w-28 h-28'
-  }[size] || 'w-20 h-20';
-
-  const handleClick = (e) => {
-    setSparkleActive(true);
-    setTimeout(() => setSparkleActive(false), 900);
-    if (onClick) onClick(e);
-  };
+export default function FireflyCompanion({ isSpeaking = false, message = null, size = 'md', onClick = null, friendlyNote = null }) {
+  const px = { sm: 44, md: 72, lg: 112 }[size] ?? 72;
 
   return (
-    <div className="relative flex flex-col items-center select-none">
-      {/* Friendly Mythical Speech Bubble */}
+    <div className="relative flex flex-col items-end select-none">
       {message && (
-        <div className="mb-4 max-w-xs px-4 py-3 rounded-2xl glass-grove text-xs sm:text-sm text-sage-100 font-medium shadow-mythic-halo border border-moss-400/35 animate-fade-in flex items-start gap-2.5 backdrop-blur-md">
-          <div className="w-5 h-5 rounded-full bg-firefly-400/20 flex items-center justify-center shrink-0 mt-0.5">
-            <Sparkles className="w-3.5 h-3.5 text-firefly-300 animate-pulse" />
-          </div>
-          <div className="flex-1">
-            <p className="leading-snug text-left text-sage-50">{message}</p>
-            {friendlyNote && (
-              <span className="block mt-1 text-[11px] text-moss-300 font-whimsical italic">
-                {friendlyNote}
-              </span>
-            )}
-          </div>
+        <div className="note relative mb-3 max-w-[17rem] rounded-2xl rounded-br-md px-3.5 py-2.5 text-[15px] leading-snug animate-rise-in" aria-live="polite">
+          <p>{message}</p>
+          {friendlyNote && <p className="mt-1 font-display italic text-xs text-night-600">{friendlyNote}</p>}
+          <svg className="absolute -bottom-2 right-5" width="14" height="10" viewBox="0 0 14 10" aria-hidden="true">
+            <path d="M0 0 H14 L10 9 Q9 10 8 9 Z" fill="#f3ead5" />
+          </svg>
         </div>
       )}
 
-      {/* The Mythical Firefly Entity */}
-      <div 
-        onClick={handleClick}
-        className={`relative ${sizeClasses} cursor-pointer transition-all duration-300 flex items-center justify-center group`}
-        title="Tap the forest spirit!"
+      <button
+        type="button"
+        onClick={onClick ?? undefined}
+        tabIndex={onClick ? 0 : -1}
+        aria-label={isSpeaking ? 'Firefly (talking)' : 'Firefly'}
+        className="relative animate-bob cursor-default"
+        style={{ width: px, height: px }}
       >
-        {/* Active Speaking Radiant Shockwave Aura */}
-        {isSpeaking && (
-          <>
-            <div className="absolute inset-0 rounded-full bg-firefly-300/35 blur-xl animate-ping opacity-90 scale-150" />
-            <div className="absolute -inset-4 rounded-full bg-moss-400/25 blur-2xl animate-pulse scale-125" />
-          </>
-        )}
-
-        {/* Ambient Bioluminescent Halo (Subdued Green + Golden Core) */}
-        <div 
-          className={`absolute inset-0 rounded-full transition-all duration-500 ${
-            isSpeaking 
-              ? 'bg-gradient-to-r from-firefly-300 via-amber-lantern to-moss-400 blur-lg opacity-90 scale-125 shadow-firefly-lg' 
-              : 'bg-gradient-to-tr from-moss-500/30 via-firefly-400/25 to-sage-200/20 blur-md opacity-60 scale-100 group-hover:scale-110'
-          }`} 
+        {/* the glow belongs to the tail, so it sits low and to the back */}
+        <span
+          className={`absolute rounded-full transition-all duration-500 ${isSpeaking ? 'opacity-100 animate-breathe' : 'opacity-40'}`}
+          style={{
+            left: '18%', top: '38%', width: '64%', height: '64%',
+            background: 'radial-gradient(circle, rgba(255,214,120,0.75) 0%, rgba(255,214,120,0.25) 40%, rgba(255,214,120,0) 70%)',
+            transform: isSpeaking ? 'scale(1.35)' : 'scale(1)',
+          }}
         />
-
-        {/* Orbiting Stardust Fae Motes (Orbit 1) */}
-        <div className="absolute w-full h-full pointer-events-none animate-orbit-1 flex items-center justify-center">
-          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-white to-firefly-300 shadow-firefly blur-[0.5px]" />
-        </div>
-
-        {/* Orbiting Stardust Fae Motes (Orbit 2) */}
-        <div className="absolute w-full h-full pointer-events-none animate-orbit-2 flex items-center justify-center">
-          <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-sage-100 to-moss-300 shadow-grove-glow blur-[0.5px]" />
-        </div>
-
-        {/* Orbiting Stardust Fae Motes (Orbit 3) */}
-        <div className="absolute w-full h-full pointer-events-none animate-orbit-3 flex items-center justify-center">
-          <div className="w-1.5 h-1.5 rounded-full bg-firefly-200 shadow-firefly blur-[0.5px]" />
-        </div>
-
-        {/* Sparkle burst on tap */}
-        {sparkleActive && (
-          <div className="absolute -inset-6 rounded-full border border-firefly-300/60 animate-ping pointer-events-none" />
-        )}
-
-        {/* Mythical Spirit Body & 4 Fairy Wings (SVG) */}
-        <div className={`relative z-10 w-full h-full flex items-center justify-center animate-mythic-float ${isSpeaking ? 'scale-110' : ''}`}>
-          <svg viewBox="0 0 120 120" className="w-full h-full overflow-visible drop-shadow-lg">
-            <defs>
-              {/* Ethereal Heart Gradient */}
-              <radialGradient id="mythicHeartGrad" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#ffffff" />
-                <stop offset="25%" stopColor="#fff8ce" />
-                <stop offset="55%" stopColor="#f5d365" />
-                <stop offset="85%" stopColor="#e09f3e" />
-                <stop offset="100%" stopColor="#2b5f42" />
-              </radialGradient>
-
-              {/* Primary Fairy Wing Gradient */}
-              <linearGradient id="fairyWingPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="rgba(255, 255, 255, 0.9)" />
-                <stop offset="40%" stopColor="rgba(223, 235, 227, 0.65)" />
-                <stop offset="75%" stopColor="rgba(117, 190, 146, 0.4)" />
-                <stop offset="100%" stopColor="rgba(242, 204, 87, 0.2)" />
-              </linearGradient>
-
-              {/* Secondary Lower Wing Gradient */}
-              <linearGradient id="fairyWingSecondary" x1="100%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="rgba(255, 255, 255, 0.8)" />
-                <stop offset="50%" stopColor="rgba(163, 212, 183, 0.45)" />
-                <stop offset="100%" stopColor="rgba(224, 159, 62, 0.15)" />
-              </linearGradient>
-
-              {/* Soft Stardust Filter */}
-              <filter id="fairyGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="1.5" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-
-            {/* --- WINGS GROUP --- */}
-            {/* Upper Left Primary Fairy Wing */}
-            <g className="origin-[54px_58px] animate-fae-flutter-l">
-              <path
-                d="M 54 58 C 24 18, 6 32, 28 66 C 38 78, 52 68, 54 58 Z"
-                fill="url(#fairyWingPrimary)"
-                stroke="rgba(255, 255, 255, 0.65)"
-                strokeWidth="0.7"
-              />
-              {/* Luminous Wing Veins */}
-              <path d="M 54 58 Q 36 44 26 38" stroke="rgba(255, 255, 255, 0.55)" strokeWidth="0.6" fill="none" />
-              <path d="M 43 50 Q 32 58 29 65" stroke="rgba(242, 204, 87, 0.45)" strokeWidth="0.5" fill="none" />
-            </g>
-
-            {/* Upper Right Primary Fairy Wing */}
-            <g className="origin-[66px_58px] animate-fae-flutter-r">
-              <path
-                d="M 66 58 C 96 18, 114 32, 92 66 C 82 78, 68 68, 66 58 Z"
-                fill="url(#fairyWingPrimary)"
-                stroke="rgba(255, 255, 255, 0.65)"
-                strokeWidth="0.7"
-              />
-              {/* Luminous Wing Veins */}
-              <path d="M 66 58 Q 84 44 94 38" stroke="rgba(255, 255, 255, 0.55)" strokeWidth="0.6" fill="none" />
-              <path d="M 77 50 Q 88 58 91 65" stroke="rgba(242, 204, 87, 0.45)" strokeWidth="0.5" fill="none" />
-            </g>
-
-            {/* Lower Left Secondary Wing */}
-            <g className="origin-[56px_66px] animate-fae-flutter-l" style={{ animationDelay: '0.08s' }}>
-              <path
-                d="M 56 66 C 36 72, 24 88, 38 98 C 48 104, 56 82, 56 66 Z"
-                fill="url(#fairyWingSecondary)"
-                stroke="rgba(163, 212, 183, 0.5)"
-                strokeWidth="0.6"
-              />
-            </g>
-
-            {/* Lower Right Secondary Wing */}
-            <g className="origin-[64px_66px] animate-fae-flutter-r" style={{ animationDelay: '0.08s' }}>
-              <path
-                d="M 64 66 C 84 72, 96 88, 82 98 C 72 104, 64 82, 64 66 Z"
-                fill="url(#fairyWingSecondary)"
-                stroke="rgba(163, 212, 183, 0.5)"
-                strokeWidth="0.6"
-              />
-            </g>
-
-            {/* --- FAIRY DUST SPARKS TRAIL --- */}
-            <g opacity="0.75">
-              <circle cx="60" cy="98" r="1.8" fill="#f5d365" className="animate-pulse" />
-              <circle cx="54" cy="106" r="1.3" fill="#a3d4b7" className="animate-pulse" style={{ animationDelay: '0.4s' }} />
-              <circle cx="65" cy="112" r="1.0" fill="#ffffff" className="animate-pulse" style={{ animationDelay: '0.8s' }} />
-            </g>
-
-            {/* --- MYTHICAL BIOLUMINESCENT ABDOMEN (The Spirit Heart) --- */}
-            <ellipse
-              cx="60"
-              cy="68"
-              rx={isSpeaking ? "18" : "15"}
-              ry={isSpeaking ? "22" : "19"}
-              fill="url(#mythicHeartGrad)"
-              className="transition-all duration-300"
-              filter="url(#fairyGlow)"
-            />
-
-            {/* Inner Radiant Starlight Core */}
-            <ellipse
-              cx="60"
-              cy="67"
-              rx="7"
-              ry="9"
-              fill="#ffffff"
-              opacity="0.9"
-            />
-
-            {/* Little Forest Sprite Head */}
-            <ellipse cx="60" cy="46" rx="7.5" ry="6.5" fill="#123321" stroke="#3c7955" strokeWidth="1" />
-
-            {/* Mythical Crown Antennae with Starlight Gems */}
-            <path d="M 57 41 Q 48 27 38 26" stroke="#f5d365" strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.9" />
-            <path d="M 63 41 Q 72 27 82 26" stroke="#f5d365" strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.9" />
-
-            {/* Glowing Celestial Crystals at Antenna Tips */}
-            <circle cx="38" cy="26" r="2.2" fill="#ffffff" stroke="#f2cc57" strokeWidth="0.8" />
-            <circle cx="82" cy="26" r="2.2" fill="#ffffff" stroke="#f2cc57" strokeWidth="0.8" />
-          </svg>
-        </div>
-      </div>
+        <svg viewBox="0 0 100 100" className="relative w-full h-full overflow-visible" aria-hidden="true">
+          {/* wings: two thin, slightly uneven ovals */}
+          <g style={{ transformOrigin: '47px 44px' }} className="animate-wing-l">
+            <path d="M47 44 C30 26 14 30 18 42 C21 51 38 50 47 44Z" fill="rgba(226,236,222,0.32)" stroke="rgba(239,230,208,0.55)" strokeWidth="1" />
+          </g>
+          <g style={{ transformOrigin: '53px 44px' }} className="animate-wing-r">
+            <path d="M53 44 C71 25 88 31 83 43 C79 52 62 50 53 44Z" fill="rgba(226,236,222,0.28)" stroke="rgba(239,230,208,0.5)" strokeWidth="1" />
+          </g>
+          {/* tail (the lantern) */}
+          <ellipse cx="50" cy="66" rx="13" ry="15" fill={isSpeaking ? '#ffe2a0' : '#e8b862'} />
+          <ellipse cx="49" cy="69" rx="7" ry="8" fill={isSpeaking ? '#fffaf0' : '#f6d796'} opacity="0.9" />
+          {/* body + head */}
+          <path d="M38 52 C38 44 62 44 62 52 C62 57 38 57 38 52Z" fill="#1c2a22" />
+          <circle cx="50" cy="40" r="8.5" fill="#22322a" />
+          <circle cx="46.5" cy="39" r="1.6" fill="#efe6d0" />
+          <circle cx="53.5" cy="39" r="1.6" fill="#efe6d0" />
+          {/* antennae: one curls a little more than the other */}
+          <path d="M46 33 C42 24 36 21 31 23" stroke="#22322a" strokeWidth="2" strokeLinecap="round" fill="none" />
+          <path d="M54 33 C57 25 63 20 69 22" stroke="#22322a" strokeWidth="2" strokeLinecap="round" fill="none" />
+          {/* legs */}
+          <path d="M42 56 l-4 6 M50 57 l0 6 M58 56 l4 6" stroke="#1c2a22" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      </button>
     </div>
   );
 }

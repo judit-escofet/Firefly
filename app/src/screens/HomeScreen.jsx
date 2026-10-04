@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { Home, Share2, Check, Clock, Navigation, Heart, Sparkles, Moon, Footprints } from 'lucide-react';
+import { Share2, Check } from 'lucide-react';
+import GroveScene from '../components/GroveScene';
+import FireflyCompanion from '../components/FireflyCompanion';
+import ParticleCanvas from '../components/ParticleCanvas';
 import { formatDistance } from '../services/units';
 
 export default function HomeScreen({
@@ -11,13 +14,13 @@ export default function HomeScreen({
 
   const minutes = Math.max(1, Math.round((summary?.duration_seconds || 660) / 60));
   const dist = formatDistance(summary?.distance_meters || 850);
-  const shareText = `Walked home with Firefly: ${dist.value} ${dist.unit}, ${minutes} min 🌙✨`;
+  const shareText = `Walked home with Firefly tonight: ${dist.value} ${dist.unit}, ${minutes} min.`;
 
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Safe Home with Firefly',
+          title: 'Home with Firefly',
           text: shareText,
           url: window.location.origin
         });
@@ -32,94 +35,40 @@ export default function HomeScreen({
     } catch (e) {}
   };
 
+  const names = contacts.map((c) => c.name).filter(Boolean);
+  const who = names.length === 0 ? 'Your people' : names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
   return (
-    <div className="min-h-screen flex flex-col justify-between p-5 bg-gradient-to-b from-[#1b1e4b] via-[#241744] to-[#142d25] text-slate-100 select-none">
-      {/* Top Reassuring Hearth Banner */}
-      <div className="pt-6 text-center animate-fade-in">
-        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-amber-500 via-gold-400 to-mystic-400 p-1 shadow-firefly-lg mb-3 flex items-center justify-center">
-          <div className="w-full h-full rounded-full bg-twilight-950 flex items-center justify-center">
-            <Home className="w-9 h-9 text-gold-300 stroke-[2]" />
-          </div>
+    <div className="relative min-h-[100dvh] flex flex-col night-sky select-none overflow-hidden">
+      <ParticleCanvas count={10} />
+
+      <main className="relative z-10 flex-1 px-6 pt-[max(3rem,env(safe-area-inset-top))] max-w-md w-full mx-auto">
+        <p className="text-[15px] text-lichen-300 animate-rise-in">{minutes} min · {dist.value} {dist.unit}</p>
+        <div className="mt-2 flex items-start justify-between gap-2">
+          <h1 className="font-display text-[2.8rem] leading-[1.02] font-medium text-parchment-50 animate-rise-in" style={{ animationDelay: '60ms' }}>
+            You're home.
+          </h1>
+          <div className="-mt-3 shrink-0"><FireflyCompanion size="sm" /></div>
         </div>
-        <h1 className="text-3xl font-mythic font-bold text-gold-metallic tracking-wide mb-1.5">
-          You're home.
-        </h1>
-        <p className="text-sm font-cinzel text-pastel-lavender/90 max-w-xs mx-auto">
-          Your contacts know you're safe.
+        <p className="mt-4 text-[17px] leading-relaxed text-lichen-200 animate-rise-in" style={{ animationDelay: '120ms' }}>
+          {who} got a text saying you made it. Thanks for letting me walk with you.
         </p>
+      </main>
+
+      <div className="relative mt-8 pointer-events-none">
+        <GroveScene litWindow className="h-[clamp(110px,24dvh,210px)] block" />
       </div>
-
-      {/* Walk Summary Card (Dear Future Manager Style) */}
-      <div className="my-auto max-w-sm mx-auto w-full space-y-3.5 animate-fade-in">
-        {/* Telemetry Stats Grid */}
-        <div className="p-5 rounded-3xl glass-mythic-card grid grid-cols-2 gap-4 divide-x divide-white/15 border border-gold-400/30">
-          <div className="flex flex-col items-center justify-center text-center">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-pastel-lavender mb-1">
-              <Clock className="w-3.5 h-3.5 text-gold-400" />
-              <span>Walk Time</span>
-            </div>
-            <div className="text-3xl font-cinzel font-bold text-white tracking-tight">
-              {minutes} <span className="text-sm font-sans font-normal text-pastel-lavender">min</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center justify-center text-center pl-4">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-pastel-lavender mb-1">
-              <Navigation className="w-3.5 h-3.5 text-gold-400" />
-              <span>Distance</span>
-            </div>
-            <div className="text-3xl font-cinzel font-bold text-white tracking-tight">
-              {dist.value} <span className="text-sm font-sans font-normal text-pastel-lavender">{dist.unit}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Guardians Safe Arrival Confirmation Widget */}
-        <div className="p-4 rounded-2xl glass-mythic flex items-center gap-3.5 border border-emerald-400/30">
-          <div className="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-400/40 flex items-center justify-center shrink-0">
-            <Heart className="w-5 h-5 text-emerald-300 fill-emerald-400/20" />
-          </div>
-          <div className="text-left text-xs">
-            <p className="font-semibold text-white">
-              Home safe
-            </p>
-            <p className="text-slate-300">
-              {contacts.length > 0
-                ? `${contacts.map(c => c.name).join(', ')} got your "home safe" text`
-                : 'Your contacts got your "home safe" text'}
-            </p>
-          </div>
-        </div>
-
-        {/* Share Card Widget */}
-        <div className="p-4 rounded-2xl glass-mythic-card border border-gold-400/25 flex items-center justify-between shadow-sm">
-          <div className="text-left">
-            <span className="text-[10px] uppercase tracking-wider text-gold-300 font-bold block mb-0.5">
-              Firefly Journey Card
-            </span>
-            <span className="text-xs text-slate-200">
-              "{dist.value} {dist.unit} under the stars in {minutes} min"
-            </span>
-          </div>
-          <button
-            onClick={handleShare}
-            className="p-2.5 rounded-xl bg-mystic-800 text-gold-300 hover:text-white hover:bg-mystic-700 transition-all flex items-center gap-1.5 text-xs font-semibold border border-gold-400/30"
-          >
-            {copied ? <Check className="w-4 h-4 text-emerald-300" /> : <Share2 className="w-4 h-4" />}
-            <span>{copied ? 'Copied' : 'Share'}</span>
+      <footer className="relative z-10 bg-[#0b1510] px-6 pt-1 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div className="max-w-md mx-auto flex gap-3">
+          <button onClick={handleShare} className="btn-quiet h-14 px-5 rounded-2xl text-[15px] font-bold flex items-center gap-2">
+            {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+            {copied ? 'Copied' : 'Share'}
+          </button>
+          <button onClick={onReset} className="btn-lantern flex-1 h-14 rounded-2xl text-[17px] font-bold">
+            Goodnight
           </button>
         </div>
-      </div>
-
-      {/* Done Button in Shimmering Gold */}
-      <div className="pb-5 max-w-sm mx-auto w-full">
-        <button
-          onClick={onReset}
-          className="w-full py-4 px-6 rounded-2xl btn-gold-metallic font-extrabold text-sm uppercase tracking-wide flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
-        >
-          <span>Done</span>
-        </button>
-      </div>
+      </footer>
     </div>
   );
 }

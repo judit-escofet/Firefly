@@ -35,37 +35,37 @@ export default function DispatchCallPanel() {
 
   return (
     <div role="dialog" aria-live="assertive" aria-label="Emergency call"
-      className="w-full p-4 rounded-3xl bg-twilight-950/95 border border-crimson-400/60 shadow-2xl text-white animate-fade-in">
+      className="w-full p-4 rounded-2xl surface !border-ember-500/60 text-parchment-50 animate-rise-in">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${live ? 'bg-crimson-600 animate-pulse' : 'bg-twilight-800'}`}>
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${live ? 'bg-ember-500 animate-pulse' : 'bg-night-700'}`}>
             <PhoneCall className="w-5 h-5" />
           </div>
           <div>
             <div className="font-bold text-base leading-tight">Emergency call</div>
-            <div className="text-xs text-pastel-lavender">Demo 911 · {call.display}</div>
+            <div className="text-[13px] text-lichen-300">Demo 911 · {call.display}</div>
           </div>
         </div>
         {!live && (
-          <button onClick={dismissDispatchCall} aria-label="Close" className="p-1.5 rounded-full text-pastel-lavender hover:text-white">
+          <button onClick={dismissDispatchCall} aria-label="Close" className="w-10 h-10 -mr-2 -mt-2 rounded-full flex items-center justify-center text-lichen-300 hover:text-parchment-50">
             <X className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      <div className="mt-3 text-sm font-semibold" data-testid="dispatch-status">
+      <div className="mt-3 text-[15px] font-bold" data-testid="dispatch-status">
         {call.mode === 'mock' && live ? `${status} (simulated)` : status}
       </div>
 
       {live && (
         <div className="mt-3 flex gap-3">
           <button onClick={toggleDispatchMute}
-            className="flex-1 py-3 rounded-2xl glass-mythic font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98]">
+            className="btn-quiet flex-1 h-12 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2">
             {call.muted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             {call.muted ? 'Unmute' : 'Mute'}
           </button>
           <button onClick={hangUpDispatchCall}
-            className="flex-1 py-3 rounded-2xl bg-crimson-600 font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98]">
+            className="flex-1 h-12 rounded-xl bg-ember-500 text-white font-bold text-[15px] flex items-center justify-center gap-2 shadow-press">
             <PhoneOff className="w-4 h-4" /> Hang up
           </button>
         </div>
@@ -73,13 +73,13 @@ export default function DispatchCallPanel() {
 
       {(call.state === 'failed' || call.state === 'automated') && (
         <a href={`tel:${call.tel}`}
-          className="mt-3 w-full py-3 rounded-2xl bg-crimson-600 font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98]">
+          className="mt-3 w-full h-12 rounded-xl bg-ember-500 text-white font-bold text-[15px] flex items-center justify-center gap-2 shadow-press">
           <PhoneCall className="w-4 h-4" /> Call {call.display} from your phone
         </a>
       )}
 
-      <p className="mt-3 text-[11px] leading-snug text-pastel-lavender">
-        <strong className="text-gold-200">Simulation:</strong> this calls a demo number standing in for 911. In the full
+      <p className="mt-3 text-[12px] leading-snug text-lichen-400">
+        <strong className="text-lichen-200">Demo:</strong> this calls a demo number standing in for 911. In the full
         product, a monitoring service would contact dispatch.
       </p>
     </div>

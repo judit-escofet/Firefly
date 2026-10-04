@@ -91,9 +91,9 @@ export default function MapCanvas({
 
     // Glowing outer aura polyline
     const glow = L.polyline(latLngs, {
-      color: '#f2cc57',
-      weight: 10,
-      opacity: 0.35,
+      color: '#0c1511',
+      weight: 9,
+      opacity: 0.7,
       lineCap: 'round',
       lineJoin: 'round',
     }).addTo(map);
@@ -101,9 +101,9 @@ export default function MapCanvas({
 
     // Core sharp golden route
     const line = L.polyline(latLngs, {
-      color: '#fff5c0',
-      weight: 3.5,
-      opacity: 0.9,
+      color: '#ffd27a',
+      weight: 5,
+      opacity: 0.95,
       lineCap: 'round',
       lineJoin: 'round',
     }).addTo(map);
@@ -140,16 +140,14 @@ export default function MapCanvas({
       const name = String(destination?.label || 'Home').split(',')[0].trim().slice(0, 22) || 'Home';
       const label = name.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
       const homeHtml = `
-        <div class="relative flex flex-col items-center select-none" style="transform: translate(-50%, -100%);">
-          <div class="relative w-8 h-8 rounded-full bg-grove-900/90 border-2 border-firefly-400 flex items-center justify-center shadow-firefly animate-pulse-slow">
-            <svg class="w-4 h-4 text-firefly-300" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 2.84L18 11v7h-3v-5H9v5H6v-7l6-5.16z"/>
-            </svg>
-            <div class="absolute -inset-1 rounded-full bg-firefly-400/30 blur-sm -z-10"></div>
-          </div>
-          <span class="mt-1 px-2 py-0.5 rounded-full bg-grove-950/80 border border-firefly-400/40 text-[10px] font-bold text-firefly-300 uppercase tracking-widest whitespace-nowrap">
-            ${label}
-          </span>
+        <div class="flex flex-col items-center select-none" style="transform: translate(-50%, -85%);">
+          <svg width="34" height="34" viewBox="0 0 30 30" style="overflow:visible">
+            <circle cx="15" cy="18" r="14" fill="#ffd27a" opacity=".25"/>
+            <path d="M4 14 L15 4 L26 14Z" fill="#0c1511" stroke="#efe6d0" stroke-width="1.4" stroke-linejoin="round"/>
+            <rect x="7" y="13" width="16" height="13" fill="#0c1511" stroke="#efe6d0" stroke-width="1.4"/>
+            <rect x="10" y="16" width="4.5" height="4.5" fill="#ffd27a"/>
+          </svg>
+          <span class="mt-1 px-2 py-0.5 rounded-md bg-night-950/90 text-[12px] font-bold text-parchment-100 whitespace-nowrap">${label}</span>
         </div>
       `;
 
@@ -172,32 +170,9 @@ export default function MapCanvas({
     const lng = currentPosition?.lng || (route[0] ? (Array.isArray(route[0]) ? route[0][1] : route[0].lng) : -74.0060);
 
     const fireflyHtml = `
-      <div class="relative flex items-center justify-center select-none" style="transform: translate(-50%, -50%); width: 44px; height: 44px;">
-        <!-- Speaking Shockwave Aura -->
-        ${isSpeaking ? '<div class="absolute -inset-3 rounded-full bg-firefly-300/40 blur-md animate-ping"></div>' : ''}
-        
-        <!-- Ambient Bioluminescent Halo -->
-        <div class="absolute -inset-1 rounded-full ${isSpeaking ? 'bg-gradient-to-tr from-firefly-400 to-amber-500 blur-md scale-125' : 'bg-moss-500/35 blur-sm'} transition-all duration-300"></div>
-
-        <!-- Mythical Spirit SVG with Fluttering Wings -->
-        <div class="relative z-10 w-10 h-10 flex items-center justify-center ${isSpeaking ? 'scale-110' : ''}">
-          <svg viewBox="0 0 100 100" class="w-full h-full overflow-visible drop-shadow-md">
-            <!-- Left Fairy Wing -->
-            <path d="M 44 48 C 18 16, 6 28, 24 54 C 32 64, 44 56, 44 48 Z" fill="rgba(255,255,255,0.75)" stroke="rgba(242,204,87,0.5)" stroke-width="0.8"/>
-            <!-- Right Fairy Wing -->
-            <path d="M 56 48 C 82 16, 94 28, 76 54 C 68 64, 56 56, 56 48 Z" fill="rgba(255,255,255,0.75)" stroke="rgba(242,204,87,0.5)" stroke-width="0.8"/>
-            <!-- Glowing Mythic Heart -->
-            <ellipse cx="50" cy="56" rx="12" ry="15" fill="#f5d365" filter="drop-shadow(0 0 8px #f5d365)"/>
-            <ellipse cx="50" cy="55" rx="5" ry="6" fill="#ffffff"/>
-            <!-- Sprite Head -->
-            <ellipse cx="50" cy="38" rx="5.5" ry="5" fill="#123321"/>
-            <!-- Antennae -->
-            <path d="M 48 35 Q 40 24 33 24" stroke="#f5d365" stroke-width="1.2" fill="none"/>
-            <path d="M 52 35 Q 60 24 67 24" stroke="#f5d365" stroke-width="1.2" fill="none"/>
-            <circle cx="33" cy="24" r="1.5" fill="#ffffff"/>
-            <circle cx="67" cy="24" r="1.5" fill="#ffffff"/>
-          </svg>
-        </div>
+      <div class="relative select-none" style="transform: translate(-50%, -50%); width: 44px; height: 44px;">
+        <div class="absolute inset-0 rounded-full transition-all duration-500" style="background: radial-gradient(circle, rgba(255,214,120,${isSpeaking ? 0.7 : 0.4}) 0%, rgba(255,214,120,0) 68%); transform: scale(${isSpeaking ? 1.6 : 1});"></div>
+        <div class="absolute rounded-full" style="left: 14px; top: 14px; width: 16px; height: 16px; background: #ffe2a0; border: 2.5px solid #0c1511; box-shadow: 0 0 0 2px #ffd27a;"></div>
       </div>
     `;
 
@@ -244,12 +219,11 @@ export default function MapCanvas({
 
     const newCircles = recentTrail.map((pt, idx) => {
       const progress = (idx + 1) / recentTrail.length;
-      const opacity = 0.15 + progress * 0.55;
+      const opacity = 0.1 + progress * 0.35;
       const circle = L.circleMarker([pt.lat, pt.lng], {
-        radius: 3 + progress * 2.5,
-        color: '#549c71',
-        weight: 1,
-        fillColor: '#f2cc57',
+        radius: 2 + progress * 1.5,
+        stroke: false,
+        fillColor: '#efe6d0',
         fillOpacity: opacity,
       }).addTo(map);
       return circle;
@@ -259,30 +233,24 @@ export default function MapCanvas({
   }, [trail]);
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-grove-950">
+    <div className="relative w-full h-full overflow-hidden bg-night-950">
       {/* Leaflet Map DOM Container */}
       <div
         ref={mapContainerRef}
         className="w-full h-full block"
-        style={{ background: '#030a06' }}
+        style={{ background: '#0c1511' }}
       />
 
       {showRecenter && (
         <button type="button" onClick={recenter}
-          className="absolute right-4 top-[45%] z-20 flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-twilight-900/95 border border-gold-400/50 text-gold-200 text-xs font-bold shadow-xl active:scale-95">
+          className="absolute right-3 top-[45%] z-20 flex items-center gap-1.5 px-4 h-11 rounded-full surface text-parchment-100 text-[14px] font-bold active:translate-y-px">
           <LocateFixed className="w-4 h-4" /> Recenter
         </button>
       )}
 
-      {/* Enchanted Forest Vignette Overlay */}
-      <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_80px_rgba(3,10,6,0.85)] z-10" />
+      {/* darker edges so the floating boxes sit on calmer map */}
+      <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_60px_rgba(8,14,11,0.7)] z-10" />
 
-      {/* Floating Whimsical Grove Wisps */}
-      <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-        <div className="absolute top-1/4 left-1/6 w-2 h-2 rounded-full bg-firefly-300/40 blur-[1px] animate-wisp-drift" />
-        <div className="absolute top-1/2 right-1/5 w-1.5 h-1.5 rounded-full bg-sage-300/35 blur-[1px] animate-wisp-drift" style={{ animationDelay: '2.5s' }} />
-        <div className="absolute bottom-1/3 left-1/3 w-2 h-2 rounded-full bg-moss-400/30 blur-[2px] animate-wisp-drift" style={{ animationDelay: '4s' }} />
-      </div>
     </div>
   );
 }

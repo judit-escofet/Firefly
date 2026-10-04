@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { LocateFixed, MapPin } from 'lucide-react';
+import { LocateFixed } from 'lucide-react';
 import { MOCK_HOME } from '../services/mockData';
 
 /**
@@ -37,7 +37,7 @@ export default function HomePicker({ value, onChange }) {
     map.invalidateSize();
     const icon = L.divIcon({
       className: '',
-      html: '<div style="transform:translate(-50%,-100%);font-size:26px;filter:drop-shadow(0 0 8px #facc15)">🏡</div>',
+      html: '<svg style="transform:translate(-50%,-100%);overflow:visible" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="18" r="13" fill="#ffd27a" opacity=".22"/><path d="M4 14 L15 4 L26 14Z" fill="#0c1511" stroke="#efe6d0" stroke-width="1.4" stroke-linejoin="round"/><rect x="7" y="13" width="16" height="13" fill="#0c1511" stroke="#efe6d0" stroke-width="1.4"/><rect x="10" y="16" width="4.5" height="4.5" fill="#ffd27a"/></svg>',
       iconSize: [0, 0],
     });
     if (markerRef.current) markerRef.current.setLatLng([home.lat, home.lng]);
@@ -60,27 +60,21 @@ export default function HomePicker({ value, onChange }) {
   };
 
   return (
-    <div className="space-y-2">
-      <div ref={el} className="w-full h-48 rounded-2xl overflow-hidden border border-white/15" aria-label="Map: tap to set home" />
+    <div className="space-y-3">
+      <div ref={el} className="w-full h-52 rounded-2xl overflow-hidden border border-parchment-100/15" aria-label="Map: tap to set home" />
       <div className="flex gap-2">
         <input
           type="text"
           value={home.label ?? ''}
           onChange={(e) => onChange({ ...home, label: e.target.value })}
-          placeholder="Name it (e.g. Home, Dorm)"
+          placeholder="Call it… Home, Dorm"
           aria-label="Home name"
-          className="flex-1 px-3 py-2.5 rounded-xl bg-twilight-950 border border-white/15 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-gold-400"
+          className="flex-1 min-w-0 px-4 h-12 rounded-xl bg-night-950 border border-parchment-100/15 text-[16px] text-parchment-50 placeholder:text-lichen-500 focus:outline-none focus:border-lantern-400"
         />
-        <button type="button" onClick={useMyLocation} className="px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-mystic-800 text-gold-300 border border-gold-400/30">
-          <LocateFixed className="w-3.5 h-3.5" />
-          <span>{locating ? 'Locating…' : "I'm home now"}</span>
+        <button type="button" onClick={useMyLocation} className="btn-quiet h-12 px-4 rounded-xl text-[15px] flex items-center gap-2 shrink-0">
+          <LocateFixed className="w-4 h-4" />
+          <span>{locating ? 'Finding you…' : "I'm home now"}</span>
         </button>
-      </div>
-      <div className="text-[11px] text-pastel-mint flex items-center gap-1.5">
-        <MapPin className="w-3 h-3 text-gold-400" />
-        <span>
-          Tap the map to move the pin · {home.lat.toFixed(4)}, {home.lng.toFixed(4)} · arrival within 30 m
-        </span>
       </div>
     </div>
   );

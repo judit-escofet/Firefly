@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Home, MapPin, Search, X, Loader2, Footprints } from 'lucide-react';
+import { Home, MapPin, Search, X, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 
 // "Where are you walking to?" — shown when she taps "Walk with me". One tap for her saved home,
@@ -57,48 +57,47 @@ export default function DestinationSheet({ isOpen, home, onClose, onStart }) {
     const selected = picked && picked.lat === place.lat && picked.lng === place.lng;
     return (
       <button key={key} type="button" onClick={() => setPicked(place)}
-        className={`w-full text-left p-3 rounded-2xl flex items-start gap-3 border transition-colors ${selected ? 'border-gold-400 bg-gold-400/10' : 'border-white/10 bg-twilight-900/60 hover:border-white/25'}`}>
+        className={`w-full text-left px-4 py-3 rounded-xl flex items-start gap-3 border transition-colors ${selected ? 'border-lantern-400/80 bg-lantern-400/10' : 'border-parchment-100/10 bg-night-950/50 hover:border-parchment-100/25'}`}>
         <span className="mt-0.5 shrink-0">{icon}</span>
         <span className="min-w-0">
-          <span className="block font-semibold text-sm text-white truncate">{place.label}</span>
-          {place.detail && <span className="block text-[11px] text-pastel-lavender truncate">{place.detail}</span>}
+          <span className="block font-bold text-[16px] text-parchment-50 truncate">{place.label}</span>
+          {place.detail && <span className="block text-[13px] text-lichen-300 truncate">{place.detail}</span>}
         </span>
       </button>
     );
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-twilight-950/80 backdrop-blur-md animate-fade-in"
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-night-950/75 animate-fade-in"
       role="dialog" aria-label="Where are you walking to?">
-      <div className="w-full max-w-md max-h-[90dvh] flex flex-col rounded-3xl glass-mythic-card p-5 shadow-2xl text-white">
+      <div className="w-full max-w-md max-h-[90dvh] flex flex-col rounded-3xl surface p-5 text-parchment-100">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-cinzel font-bold">Where are you walking to?</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded-full text-pastel-lavender hover:text-white">
+          <h2 className="font-display text-2xl font-medium text-parchment-50">Where to?</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center text-lichen-300 hover:text-parchment-50">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <label className="relative block mb-3">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-pastel-lavender" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-lichen-400" />
           <input ref={input} value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" enterKeyHint="search"
-            placeholder="Search a place or address"
-            className="w-full pl-9 pr-9 py-3 rounded-2xl bg-twilight-900/80 border border-white/15 text-sm text-white placeholder:text-pastel-lavender/70 focus:outline-none focus:border-gold-400" />
-          {busy && <Loader2 className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gold-400" />}
+            placeholder="Search a place or an address"
+            className="w-full pl-10 pr-10 h-12 rounded-xl bg-night-950 border border-parchment-100/15 text-[16px] text-parchment-50 placeholder:text-lichen-500 focus:outline-none focus:border-lantern-400" />
+          {busy && <Loader2 className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-lantern-300" />}
         </label>
 
         <div className="flex-1 overflow-y-auto flex flex-col gap-2 min-h-0">
-          {home && option({ ...home, label: home.label || 'Home', detail: 'Saved home' }, <Home className="w-4 h-4 text-gold-400" />, 'home')}
-          {results.map((r, i) => option(r, <MapPin className="w-4 h-4 text-pastel-mint" />, `${r.lat},${r.lng},${i}`))}
+          {home && option({ ...home, label: home.label || 'Home', detail: 'Saved home' }, <Home className="w-4 h-4 text-lantern-300" />, 'home')}
+          {results.map((r, i) => option(r, <MapPin className="w-4 h-4 text-lichen-300" />, `${r.lat},${r.lng},${i}`))}
           {!busy && query.trim().length >= 3 && !results.length && !error && (
-            <p className="text-xs text-pastel-lavender px-1">No places found. Try a street address.</p>
+            <p className="text-[14px] text-lichen-300 px-1">Nothing by that name. A street address usually works.</p>
           )}
-          {error && <p className="text-xs text-pastel-rose px-1">Search isn't available right now ({error}).</p>}
+          {error && <p className="text-[14px] text-ember-400 px-1">Search isn't working right now ({error}).</p>}
         </div>
 
         <button type="button" disabled={!picked} onClick={() => picked && onStart({ lat: picked.lat, lng: picked.lng, label: picked.label || 'Home' })}
-          className="mt-4 w-full py-4 rounded-2xl bg-gradient-to-r from-gold-400 to-amber-500 text-twilight-950 font-extrabold text-sm uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-40 active:scale-[0.98]">
-          <Footprints className="w-4 h-4" />
-          {picked ? `Start walk to ${picked.label || 'Home'}` : 'Pick where you are going'}
+          className="btn-lantern mt-4 w-full h-14 rounded-2xl text-[17px] font-bold disabled:opacity-40">
+          {picked ? `Walk to ${picked.label || 'Home'}` : 'Pick a place first'}
         </button>
       </div>
     </div>

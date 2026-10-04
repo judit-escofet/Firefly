@@ -9,6 +9,7 @@ import { acquireMic } from './audio/micHub.js';
 import { startDispatchCall, hangUpDispatchCall, dismissDispatchCall } from './services/dispatchCall';
 import { navigation } from './services/navigation';
 
+import FireflyCompanion from './components/FireflyCompanion';
 import WelcomeScreen from './screens/WelcomeScreen';
 import SetupScreen from './screens/SetupScreen';
 import WalkScreen from './screens/WalkScreen';
@@ -154,11 +155,12 @@ export default function App({ modules }) {
   };
 
   return (
-    <div className="relative min-h-screen bg-grove-950 text-sage-100 font-sans antialiased overflow-x-hidden">
+    <div className="relative min-h-[100dvh] bg-night-950 text-parchment-100 font-sans antialiased overflow-x-hidden">
       {screen === 'welcome' && (
         <WelcomeScreen
           hasProfile={!!profile}
           name={profile?.name}
+          contacts={profile?.contacts || []}
           error={startError}
           onStartSetup={() => setScreen('setup')}
           onStartDemo={handleTryDemo}
@@ -178,9 +180,9 @@ export default function App({ modules }) {
       )}
 
       {screen === 'starting' && (
-        <div className="min-h-screen flex flex-col items-center justify-center text-firefly-300">
-          <div className="w-12 h-12 rounded-full border-2 border-moss-400 border-t-firefly-400 animate-spin mb-4" />
-          <p className="text-sm font-whimsical tracking-wider text-sage-200">Lighting your path home…</p>
+        <div className="min-h-[100dvh] flex flex-col items-center justify-center night-sky">
+          <FireflyCompanion size="md" isSpeaking />
+          <p className="mt-6 font-display italic text-lg text-lichen-200">Finding the way…</p>
         </div>
       )}
 

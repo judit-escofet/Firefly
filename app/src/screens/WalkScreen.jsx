@@ -7,7 +7,7 @@ import DispatchCallPanel from '../components/DispatchCallPanel';
 import NavigationBanner from '../components/NavigationBanner';
 import { startDispatchCall, DEMO_DISPATCH_TEL } from '../services/dispatchCall';
 import { formatDistance } from '../services/units';
-import { PhoneCall, Clock, Navigation, X, Info } from 'lucide-react';
+import { PhoneCall, Info, Mic, MicOff } from 'lucide-react';
 
 /**
  * Walk screen (P4 spec 2): full-screen map with the glowing route and her trail, the firefly
@@ -73,88 +73,70 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
   const { value: remainingText, unit: remainingUnit } = formatDistance(remaining);
 
   return (
-    <div className="relative w-full h-[100dvh] overflow-hidden bg-twilight-950 text-white select-none">
+    <div className="relative w-full h-[100dvh] overflow-hidden bg-night-950 text-parchment-100 select-none">
       <div className="absolute inset-0 z-0">
         <MapCanvas route={walk.route.points} currentPosition={position} trail={trail} destination={walk.destination} isSpeaking={speaking} />
       </div>
 
-      <div className="absolute top-4 left-4 right-4 z-20 flex flex-col gap-2 max-w-md mx-auto">
+      <div className="absolute top-0 inset-x-0 z-20 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] flex flex-col gap-2 max-w-md mx-auto">
         <DispatchCallPanel />
 
         {alerted && (
-          <div className="p-3 rounded-2xl glass-mythic-card flex items-center gap-2.5 text-xs text-gold-200 animate-fade-in shadow-xl">
-            <div className="w-2.5 h-2.5 rounded-full bg-gold-400 shrink-0" />
-            <span className="font-medium">Your contacts have been told where you are.</span>
+          <div className="px-4 py-3 rounded-2xl surface text-[15px] text-parchment-50 animate-rise-in">
+            Your people know where you are now.
           </div>
         )}
 
         {!wakeLock.supported && (
-          <div className="px-3 py-1.5 rounded-xl bg-twilight-900/90 border border-white/15 text-[11px] text-pastel-lavender flex items-center gap-1.5">
-            <Info className="w-3.5 h-3.5 text-gold-400 shrink-0" />
-            <span>This browser can't keep the screen on: please keep it awake while you walk.</span>
+          <div className="px-4 py-2 rounded-xl surface text-[13px] text-lichen-300 flex items-center gap-2">
+            <Info className="w-4 h-4 text-lantern-300 shrink-0" />
+            <span>Keep your screen on while you walk (this browser can't do it for you).</span>
           </div>
         )}
 
-        {/* One floating box: next turn on top, ETA / distance left / listening underneath. */}
+        {/* One box: next turn on top, then time and distance left, and whether I can hear you. */}
         <NavigationBanner>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-pastel-lavender font-bold">
-                <Clock className="w-3 h-3 text-gold-400" />
-                <span>ETA</span>
-              </div>
-              <div className="text-2xl font-cinzel font-bold text-white tracking-tight">
-                {etaMinutes} <span className="text-sm font-sans font-normal text-pastel-lavender">min</span>
-              </div>
-            </div>
-            <div className="h-8 w-px bg-white/15" />
-            <div>
-              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-pastel-lavender font-bold">
-                <Navigation className="w-3 h-3 text-gold-400" />
-                <span>Left</span>
-              </div>
-              <div className="text-2xl font-cinzel font-bold text-white tracking-tight">
-                {remainingText} <span className="text-sm font-sans font-normal text-pastel-lavender">{remainingUnit}</span>
-              </div>
+          <div className="flex items-end justify-between gap-3">
+            <p className="font-display text-parchment-50 leading-none">
+              <span className="text-[1.9rem] font-medium">{etaMinutes}</span>
+              <span className="text-base text-lichen-300"> min</span>
+              <span className="mx-2 text-lichen-500">·</span>
+              <span className="text-[1.9rem] font-medium">{remainingText}</span>
+              <span className="text-base text-lichen-300"> {remainingUnit}</span>
+            </p>
+            <div className="flex flex-col items-end min-w-0 pb-0.5">
+              <span className={`flex items-center gap-1.5 text-[13px] ${listening === 'listening' ? 'text-moss-300' : listening === 'mic off' ? 'text-ember-400' : 'text-lichen-400'}`}>
+                {listening === 'mic off' ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                {listening === 'listening' ? 'Listening' : listening === 'mic off' ? "Can't hear you" : 'Starting…'}
+              </span>
+              {heard && <span className="text-[12px] text-lichen-300 mt-0.5 max-w-[10rem] truncate italic">“{heard}”</span>}
             </div>
           </div>
-
-          <div className="flex flex-col items-end">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-mystic-900/90 border border-gold-400/40 text-[11px] font-semibold text-gold-200 shadow-sm">
-              <span className={`w-2 h-2 rounded-full ${listening === 'listening' ? 'bg-emerald-400 animate-pulse' : listening === 'mic off' ? 'bg-slate-400' : 'bg-gold-400 animate-pulse'}`} />
-              <span>{listening === 'listening' ? 'Listening' : listening === 'mic off' ? 'Mic off' : 'Starting…'}</span>
-            </div>
-            {heard && <span className="text-[10px] text-pastel-mint mt-1 max-w-[9rem] truncate italic">“{heard}”</span>}
-          </div>
-        </div>
         </NavigationBanner>
       </div>
 
-      <div className="absolute right-4 bottom-32 z-20 flex flex-col items-end max-w-[85vw]">
+      <div className="absolute right-3 bottom-[7.5rem] z-20 flex flex-col items-end max-w-[85vw]">
         <FireflyCompanion isSpeaking={speaking} message={caption} size="md" />
       </div>
 
-      <div className="absolute bottom-5 left-4 right-4 z-20 max-w-md mx-auto flex flex-col gap-3" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex items-center gap-3">
+      <div className="absolute bottom-0 inset-x-0 z-20 px-3 pb-[max(1rem,env(safe-area-inset-bottom))] max-w-md mx-auto">
+        <div className="flex items-stretch gap-2">
           <a
             href={`tel:${DEMO_DISPATCH_TEL}`}
             onClick={handle911Press}
-            className="flex-1 py-4 px-5 rounded-2xl bg-gradient-to-r from-crimson-600 via-rose-700 to-crimson-700 text-white font-extrabold text-base flex items-center justify-center gap-2.5 shadow-xl active:scale-[0.98] transition-transform touch-manipulation border border-crimson-400/50"
+            className="flex-1 h-14 rounded-2xl bg-ember-500 hover:bg-ember-400 text-white font-bold text-[17px] flex items-center justify-center gap-2 shadow-press active:translate-y-px touch-manipulation"
           >
-            <PhoneCall className="w-5 h-5 fill-white stroke-[2.5]" />
-            <span className="tracking-wide">Call 911</span>
+            <PhoneCall className="w-5 h-5" />
+            Call 911
           </a>
           <button
             onClick={onEndWalk}
-            className="py-4 px-6 rounded-2xl glass-mythic text-slate-100 font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+            className="h-14 px-5 rounded-2xl surface text-parchment-100 font-bold text-[15px] active:translate-y-px"
           >
-            <X className="w-4 h-4 stroke-[2.5]" />
-            <span>End walk</span>
+            End walk
           </button>
         </div>
       </div>
-
     </div>
   );
 }

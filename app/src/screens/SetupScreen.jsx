@@ -4,10 +4,7 @@ import { api, normalizePhone } from '../services/api';
 import { startPhraseTest } from '../services/phraseTest';
 import { MOCK_HOME } from '../services/mockData';
 import HomePicker from '../components/HomePicker';
-import { 
-  ArrowLeft, ArrowRight, Check, Shield, Users, Mic, KeyRound, 
-  MapPin, Sparkles, AlertCircle, Compass, Stars 
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Mic, AlertCircle, X } from 'lucide-react';
 
 // Chip label → the interest the companion's /api/news searches for.
 const NEWS_TOPICS = [
@@ -83,12 +80,12 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
 
   const handleNextFromStep1 = () => {
     if (!name.trim()) {
-      setError('Please share your name for the companion.');
+      setError('What should I call you?');
       return;
     }
     const validContacts = contacts.filter(c => c.name.trim() && c.phone.trim());
     if (validContacts.length === 0) {
-      setError('Please add at least 1 trusted contact with a name and phone number.');
+      setError('Add at least one person, with a name and a phone number.');
       return;
     }
     const bad = validContacts.find(c => !normalizePhone(c.phone));
@@ -112,11 +109,11 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
     }
 
     if (!/^\d{4}$/.test(cancelPin)) {
-      setError('Cancel PIN must be exactly 4 digits.');
+      setError('The PIN needs to be 4 digits.');
       return;
     }
     if (cancelPin !== confirmCancelPin) {
-      setError('Cancel PIN confirmation does not match.');
+      setError("The two PINs don't match. Try again?");
       return;
     }
 
@@ -131,7 +128,7 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
       return;
     }
     if (newsInterests.length === 0) {
-      setError('Please select at least 1 conversational theme.');
+      setError('Pick at least one thing to chat about.');
       return;
     }
 
@@ -160,311 +157,178 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
       onComplete(saved);
     } catch (err) {
       setIsSubmitting(false);
-      setError('Failed to save profile: ' + err.message);
+      setError("Couldn't save that: " + err.message);
     }
   };
 
+  const input = 'w-full px-4 h-12 rounded-xl bg-night-950 border border-parchment-100/15 text-[16px] text-parchment-50 placeholder:text-lichen-500 focus:outline-none focus:border-lantern-400';
+  const label = 'block text-[15px] font-bold text-parchment-100 mb-1.5';
+  const help = 'text-[14px] leading-relaxed text-lichen-300';
+  const titles = ['', 'First, a little about you', 'Your secret signal', 'Small talk, and home'];
+
   return (
-    <div className="min-h-screen flex flex-col justify-between p-5 bg-gradient-to-b from-[#1b1e4b] via-[#241744] to-[#122822] text-slate-100 select-none">
-      {/* Top Header & Progress */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
+    <div className="min-h-[100dvh] flex flex-col night-sky select-none">
+      <header className="px-5 pt-[max(1rem,env(safe-area-inset-top))] max-w-md w-full mx-auto">
+        <div className="flex items-center gap-3 h-11">
           <button
             onClick={step > 1 ? () => setStep(step - 1) : onBack}
-            className="p-2 -ml-2 rounded-xl text-pastel-lavender hover:text-white hover:bg-mystic-800/60"
+            aria-label="Back"
+            className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-lichen-300 hover:text-parchment-50"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <span className="text-xs font-cinzel tracking-widest text-gold-300 uppercase font-bold">
-            Companion Attunement • {step} of 3
-          </span>
-          <div className="w-9" />
+          {/* three little lights: lit for done, glowing for this step */}
+          <div className="flex gap-2" aria-label={`Step ${step} of 3`}>
+            {[1, 2, 3].map((n) => (
+              <span key={n} className={`h-1.5 rounded-full transition-all duration-300 ${n === step ? 'w-8 bg-lantern-400 shadow-firefly' : n < step ? 'w-4 bg-lantern-400/60' : 'w-4 bg-parchment-100/15'}`} />
+            ))}
+          </div>
+          <span className="ml-auto text-sm text-lichen-400">{step} of 3</span>
         </div>
+        <h2 key={step} className="mt-5 font-display text-[2rem] leading-tight font-medium text-parchment-50 animate-rise-in">
+          {titles[step]}
+        </h2>
+      </header>
 
-        {/* Shimmering Metallic Progress Bar */}
-        <div className="w-full h-1.5 bg-twilight-900 rounded-full overflow-hidden mb-5 border border-white/10">
-          <div
-            className="h-full bg-gradient-to-r from-mystic-500 via-gold-400 to-amber-500 transition-all duration-300"
-            style={{ width: `${(step / 3) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 max-w-md mx-auto w-full flex flex-col justify-center py-2">
+      <main className="flex-1 px-5 pt-5 pb-4 max-w-md w-full mx-auto">
         {error && (
-          <div className="mb-4 p-3.5 rounded-2xl bg-crimson-900/60 border border-crimson-500/40 text-red-100 text-xs flex items-start gap-2.5 animate-shake">
-            <AlertCircle className="w-4 h-4 text-crimson-400 mt-0.5 shrink-0" />
+          <div className="mb-5 px-4 py-3 rounded-xl bg-ember-600/15 border border-ember-500/40 text-[15px] text-parchment-50 flex items-start gap-2.5 animate-shake" role="alert">
+            <AlertCircle className="w-4 h-4 text-ember-400 mt-0.5 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* STEP 1: Name and Trusted Contacts */}
         {step === 1 && (
-          <div className="space-y-4 animate-fade-in">
+          <div className="space-y-6 animate-fade-in">
             <div>
-              <h2 className="text-2xl font-mythic font-bold text-gold-metallic mb-1">
-                Traveler & Guardians
-              </h2>
-              <p className="text-xs text-pastel-lavender/80 leading-relaxed">
-                Your traveler identity and the guardian fireflies who will hold vigil over your journey.
-              </p>
+              <label htmlFor="setup-name" className={label}>Your name</label>
+              <input id="setup-name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="What should I call you?" autoComplete="given-name" className={input} />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-pastel-lavender mb-1.5">
-                Traveler Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="Elena"
-                className="w-full px-4 py-3 rounded-2xl bg-mystic-900/80 border border-gold-400/30 text-white placeholder-slate-400 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 text-sm shadow-sm"
-              />
-            </div>
-
-            {/* Trusted Contacts as Fireflies waiting at home */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-pastel-lavender flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-gold-400" />
-                  <span>Guardian Fireflies ({contacts.length}/3)</span>
-                </label>
-                {contacts.length < 3 && (
-                  <button
-                    onClick={addContact}
-                    className="text-xs font-bold text-gold-300 hover:text-gold-200"
-                  >
-                    + Add Guardian
-                  </button>
-                )}
+              <div className="flex items-baseline justify-between">
+                <span className={label}>Who should I text if something's wrong?</span>
               </div>
+              <p className={`${help} mb-3`}>Up to three people. They only hear from me if you need help, and when you get home.</p>
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {contacts.map((contact, idx) => (
-                  <div key={contact.id} className="p-3.5 rounded-2xl glass-mythic relative flex flex-col gap-2.5 border border-white/10">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gold-400 shadow-firefly animate-pulse" />
-                        <span className="text-xs font-cinzel text-gold-200 font-semibold">
-                          Guardian Vigil {idx + 1}
-                        </span>
-                      </div>
-                      {contacts.length > 1 && (
-                        <button
-                          onClick={() => removeContact(contact.id)}
-                          className="text-[11px] text-crimson-400 hover:text-crimson-300"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        placeholder="Name (e.g. Maya)"
-                        value={contact.name}
-                        onChange={e => updateContact(contact.id, 'name', e.target.value)}
-                        className="px-3 py-2 rounded-xl bg-twilight-950 border border-white/15 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-gold-400"
-                      />
-                      <input
-                        type="tel"
-                        placeholder="Phone number"
-                        value={contact.phone}
-                        onChange={e => updateContact(contact.id, 'phone', e.target.value)}
-                        className="px-3 py-2 rounded-xl bg-twilight-950 border border-white/15 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-gold-400"
-                      />
-                    </div>
+                  <div key={contact.id} className="grid grid-cols-[1fr_1.15fr_auto] gap-2 items-center">
+                    <input type="text" placeholder={['Mom', 'Roommate', 'Best friend'][idx] ?? 'Name'} aria-label={`Contact ${idx + 1} name`}
+                      value={contact.name} onChange={e => updateContact(contact.id, 'name', e.target.value)} className={input} />
+                    <input type="tel" inputMode="tel" placeholder="Phone" aria-label={`Contact ${idx + 1} phone`}
+                      value={contact.phone} onChange={e => updateContact(contact.id, 'phone', e.target.value)} className={input} />
+                    {contacts.length > 1 ? (
+                      <button onClick={() => removeContact(contact.id)} aria-label={`Remove contact ${idx + 1}`} className="w-9 h-9 rounded-full text-lichen-400 hover:text-ember-400 flex items-center justify-center">
+                        <X className="w-4 h-4" />
+                      </button>
+                    ) : <span className="w-9" />}
                   </div>
                 ))}
               </div>
+              {contacts.length < 3 && (
+                <button onClick={addContact} className="mt-3 text-[15px] text-lantern-300 hover:text-lantern-200 underline decoration-lantern-300/30 underline-offset-4">
+                  Add someone else
+                </button>
+              )}
             </div>
           </div>
         )}
 
-        {/* STEP 2: Code Phrase & PIN */}
         {step === 2 && (
-          <div className="space-y-4 animate-fade-in max-h-[70vh] overflow-y-auto pr-1">
+          <div className="space-y-7 animate-fade-in">
             <div>
-              <h2 className="text-2xl font-mythic font-bold text-gold-metallic mb-1">
-                Whispers & Your PIN
-              </h2>
-              <p className="text-xs text-pastel-lavender/80 leading-relaxed">
-                A secret phrase and one PIN for undetectable safety.
+              <label htmlFor="setup-phrase" className={label}>Code phrase</label>
+              <p className={`${help} mb-3`}>
+                Something you'd say on a normal phone call, so nobody nearby notices. When I hear it, I start a quiet 10-second countdown.
               </p>
-            </div>
-
-            {/* Code Phrase */}
-            <div className="p-4 rounded-2xl glass-mythic space-y-3 border border-white/15">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-pastel-lavender">
-                Spoken Code Phrase
-              </label>
-              <p className="text-xs text-slate-200 leading-relaxed">
-                A phrase you can speak naturally without arousing suspicion. When Firefly hears this, it immediately opens the quiet countdown.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={codePhrase}
-                  onChange={e => setCodePhrase(e.target.value)}
-                  placeholder="e.g. the moon is bright tonight"
-                  className="flex-1 px-3 py-2.5 rounded-xl bg-twilight-950 border border-white/15 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-gold-400"
-                />
-                <button
-                  type="button"
-                  onClick={handleTestMic}
-                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    micTestPassed
-                      ? 'bg-emerald-600 text-white'
-                      : isTestingMic
-                      ? 'bg-gold-400 text-twilight-950 animate-pulse'
-                      : 'bg-mystic-800 text-gold-300 border border-gold-400/30'
-                  }`}
-                >
-                  <Mic className="w-3.5 h-3.5" />
-                  <span>{isTestingMic ? 'Listening… (tap to stop)' : micTestPassed ? 'Heard it!' : 'Say it once'}</span>
+              <input id="setup-phrase" type="text" value={codePhrase} onChange={e => setCodePhrase(e.target.value)}
+                placeholder="the moon is bright tonight" className={`${input} font-display italic text-[17px]`} />
+              <div className="mt-3 flex items-center gap-3">
+                <button type="button" onClick={handleTestMic}
+                  className={`h-11 px-4 rounded-full text-[15px] font-bold flex items-center gap-2 transition-colors ${
+                    micTestPassed ? 'bg-moss-500/25 text-moss-300 border border-moss-400/50'
+                      : isTestingMic ? 'bg-lantern-400 text-night-950'
+                      : 'btn-quiet'}`}>
+                  {micTestPassed ? <Check className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  <span>{isTestingMic ? 'Listening… tap to stop' : micTestPassed ? 'Got it' : 'Say it once'}</span>
                 </button>
+                {!phraseTest && <span className="text-[14px] text-lichen-400">to check I can hear it</span>}
               </div>
               {phraseTest && (
-                <p className={`text-[11px] leading-relaxed ${micTestPassed ? 'text-pastel-mint' : phraseTest.state === 'listening' ? 'text-slate-300' : 'text-gold-200'}`} aria-live="polite">
-                  {phraseTest.state === 'listening' && (phraseTest.heard ? `Hearing: “${phraseTest.heard}”` : 'Say your phrase out loud now…')}
-                  {micTestPassed && `Firefly will catch “${phraseTest.heard}” on a walk.`}
+                <p className={`mt-2 text-[14px] leading-relaxed ${micTestPassed ? 'text-moss-300' : phraseTest.state === 'listening' ? 'text-lichen-300' : 'text-lantern-200'}`} aria-live="polite">
+                  {phraseTest.state === 'listening' && (phraseTest.heard ? `Hearing: “${phraseTest.heard}”` : 'Go ahead, say it out loud…')}
+                  {micTestPassed && `I'll catch “${phraseTest.heard}” on a walk.`}
                   {(phraseTest.state === 'failed' || phraseTest.state === 'error') &&
-                    `${phraseTest.message}${phraseTest.heard ? ` (heard “${phraseTest.heard}”)` : ''}`}
+                    `${phraseTest.message}${phraseTest.heard ? ` (I heard “${phraseTest.heard}”)` : ''}`}
                 </p>
               )}
             </div>
 
-            {/* PIN */}
-            <div className="p-4 rounded-2xl glass-mythic space-y-4 border border-gold-400/20">
-              <div className="flex items-center gap-2">
-                <KeyRound className="w-4 h-4 text-gold-400" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-                  Your PIN
-                </h3>
-              </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                Your PIN stops the countdown. Typing any other code looks exactly the same on screen ("All good"), but quietly calls for help and alerts your contacts, so you're safe even if someone makes you cancel.
+            <div className="pt-6 border-t border-parchment-100/10">
+              <span className={label}>A 4-digit PIN</span>
+              <p className={`${help} mb-3`}>
+                Your PIN stops the countdown. If someone makes you cancel, type any other code: the screen says “All good” just the same, but I quietly get you help.
               </p>
-
-              {/* Cancel PIN */}
-              <div className="space-y-1.5 pt-1 border-t border-white/10">
-                <span className="text-xs font-semibold text-pastel-mint">
-                  PIN (safely ends the countdown)
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="password"
-                    maxLength={4}
-                    inputMode="numeric"
-                    placeholder="4 digits"
-                    value={cancelPin}
-                    onChange={e => setCancelPin(e.target.value.replace(/\D/g, ''))}
-                    className="px-3 py-2 rounded-xl bg-twilight-950 border border-white/15 text-xs text-center text-white tracking-widest focus:outline-none focus:border-gold-400"
-                  />
-                  <input
-                    type="password"
-                    maxLength={4}
-                    inputMode="numeric"
-                    placeholder="Confirm"
-                    value={confirmCancelPin}
-                    onChange={e => setConfirmCancelPin(e.target.value.replace(/\D/g, ''))}
-                    className="px-3 py-2 rounded-xl bg-twilight-950 border border-white/15 text-xs text-center text-white tracking-widest focus:outline-none focus:border-gold-400"
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input type="password" maxLength={4} inputMode="numeric" autoComplete="new-password" placeholder="PIN" aria-label="PIN"
+                  value={cancelPin} onChange={e => setCancelPin(e.target.value.replace(/\D/g, ''))}
+                  className={`${input} text-center tracking-[0.5em] placeholder:tracking-normal text-lg`} />
+                <input type="password" maxLength={4} inputMode="numeric" autoComplete="new-password" placeholder="Again" aria-label="Confirm PIN"
+                  value={confirmCancelPin} onChange={e => setConfirmCancelPin(e.target.value.replace(/\D/g, ''))}
+                  className={`${input} text-center tracking-[0.5em] placeholder:tracking-normal text-lg`} />
               </div>
-
             </div>
           </div>
         )}
 
-        {/* STEP 3: News Interests and Home Address */}
         {step === 3 && (
-          <div className="space-y-4 animate-fade-in">
+          <div className="space-y-7 animate-fade-in">
             <div>
-              <h2 className="text-2xl font-mythic font-bold text-gold-metallic mb-1">
-                Traveler Interests
-              </h2>
-              <p className="text-xs text-pastel-lavender/80 leading-relaxed">
-                Whimsical topics for the companion to speak of, and your hearth destination.
-              </p>
-            </div>
-
-            {/* Conversation Topics */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-pastel-lavender mb-2">
-                Companion Themes
-              </label>
+              <span className={label}>What should we chat about?</span>
+              <p className={`${help} mb-3`}>I'll bring up news on these when it goes quiet.</p>
               <div className="flex flex-wrap gap-2">
-                {NEWS_TOPICS.map(([label, topic]) => {
-                  const isSelected = newsInterests.includes(topic);
+                {NEWS_TOPICS.map(([text, topic]) => {
+                  const on = newsInterests.includes(topic);
                   return (
-                    <button
-                      key={topic}
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => toggleNewsInterest(topic)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                        isSelected
-                          ? 'bg-gradient-to-r from-mystic-600 to-indigo-600 text-white border border-gold-400 shadow-sm scale-105'
-                          : 'bg-mystic-900/60 text-slate-300 border border-white/10 hover:border-gold-400/40'
-                      }`}
-                    >
-                      {label}
+                    <button key={topic} type="button" aria-pressed={on} onClick={() => toggleNewsInterest(topic)}
+                      className={`h-10 px-4 rounded-full text-[15px] transition-colors border ${
+                        on ? 'bg-lantern-400/15 border-lantern-400/70 text-lantern-200' : 'border-parchment-100/15 text-lichen-300 hover:border-parchment-100/35'}`}>
+                      {on && <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" />}{text}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Home Address */}
-            <div className="p-4 rounded-2xl glass-mythic space-y-2 border border-white/15">
-              <label className="text-xs font-semibold uppercase tracking-wider text-pastel-lavender flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-gold-400" />
-                <span>Home Hearth Destination</span>
-              </label>
+            <div>
+              <span className={label}>Where's home?</span>
+              <p className={`${help} mb-3`}>Tap the map. When you're within about 100 feet of it, I'll know you made it.</p>
               <HomePicker value={home} onChange={setHome} />
-
             </div>
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Bottom Action */}
-      <div className="pt-3 max-w-md mx-auto w-full">
-        {step === 1 && (
-          <button
-            onClick={handleNextFromStep1}
-            className="w-full py-4 px-6 rounded-2xl btn-gold-metallic font-extrabold text-sm uppercase tracking-wide flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
-          >
-            <span>Proceed to Secret Signs</span>
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        )}
-
-        {step === 2 && (
-          <button
-            onClick={handleNextFromStep2}
-            className="w-full py-4 px-6 rounded-2xl btn-gold-metallic font-extrabold text-sm uppercase tracking-wide flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
-          >
-            <span>Proceed to Interests</span>
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        )}
-
-        {step === 3 && (
-          <button
-            onClick={handleSaveProfile}
-            disabled={isSubmitting}
-            className="w-full py-4 px-6 rounded-2xl btn-gold-metallic font-extrabold text-sm uppercase tracking-wide flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50"
-          >
-            <Check className="w-5 h-5 stroke-[2.5]" />
-            <span>{isSubmitting ? 'Attuning...' : 'Save & Ready to Walk'}</span>
-          </button>
-        )}
-      </div>
+      <footer className="sticky bottom-0 px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-night-950 via-night-950 to-transparent">
+        <div className="max-w-md mx-auto">
+          {step === 1 && (
+            <button onClick={handleNextFromStep1} className="btn-lantern w-full h-14 rounded-2xl text-[17px] font-bold flex items-center justify-center gap-2">
+              Next <ArrowRight className="w-5 h-5" />
+            </button>
+          )}
+          {step === 2 && (
+            <button onClick={handleNextFromStep2} className="btn-lantern w-full h-14 rounded-2xl text-[17px] font-bold flex items-center justify-center gap-2">
+              Next <ArrowRight className="w-5 h-5" />
+            </button>
+          )}
+          {step === 3 && (
+            <button onClick={handleSaveProfile} disabled={isSubmitting} className="btn-lantern w-full h-14 rounded-2xl text-[17px] font-bold disabled:opacity-60">
+              {isSubmitting ? 'Saving…' : "All set, let's go"}
+            </button>
+          )}
+        </div>
+      </footer>
     </div>
   );
 }

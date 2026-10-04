@@ -51,35 +51,32 @@ export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, on
 
   if (allGood) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-grove-950 text-sage-100 animate-fade-in select-none">
-        <div className="p-8 rounded-3xl glass-grove border border-moss-400/30 flex flex-col items-center text-center max-w-sm w-full shadow-2xl">
-          <div className="w-16 h-16 rounded-full bg-grove-900 border border-moss-400/40 flex items-center justify-center mb-5 text-moss-300">
-            <CheckCircle2 className="w-9 h-9 stroke-[2]" />
-          </div>
-          <h2 className="text-2xl font-whimsical font-bold text-white mb-2">All good, enjoy your walk</h2>
-          <p className="text-xs text-sage-300">Continuing through the grove…</p>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-night-950 text-parchment-100 animate-fade-in select-none">
+        <div className="flex flex-col items-center text-center max-w-xs">
+          <CheckCircle2 className="w-10 h-10 text-moss-300 mb-5" strokeWidth={1.75} />
+          <h2 className="font-display text-[1.9rem] leading-tight font-medium text-parchment-50 [text-wrap:balance]">All good, enjoy your walk</h2>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-between p-6 bg-grove-950 text-sage-200 select-none">
+    <div className="fixed inset-0 z-50 flex flex-col justify-between p-6 bg-night-950 text-parchment-100 select-none">
       <div className="pt-6 text-center">
-        <p className="text-xs font-whimsical tracking-widest text-sage-400" aria-live="polite">
+        <p className="text-[15px] tabular-nums text-lichen-400" aria-live="polite">
           {Number.isFinite(secondsLeft) ? `${secondsLeft}s` : ''}
         </p>
       </div>
 
       <div className="flex flex-col items-center justify-center my-auto w-full max-w-xs mx-auto">
-        <h2 className="text-xl font-whimsical font-semibold text-sage-100 text-center mb-6">Enter your PIN to continue</h2>
+        <h2 className="font-display text-2xl font-medium text-parchment-50 text-center mb-7">Enter your PIN to continue</h2>
 
         <div className={`flex gap-4 mb-8 ${shake ? 'animate-shake' : ''}`} aria-label={`${pinDigits.length} of 4 digits entered`}>
           {[0, 1, 2, 3].map((idx) => (
             <div
               key={idx}
               className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
-                idx < pinDigits.length ? 'bg-sage-200 scale-110 shadow-sm' : 'bg-grove-900 border border-moss-500/30'
+                idx < pinDigits.length ? 'bg-parchment-100' : 'border-2 border-parchment-100/25'
               }`}
             />
           ))}
@@ -93,7 +90,7 @@ export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, on
               onClick={() => handleDigit(num)}
               disabled={isVerifying}
               aria-label={`digit ${num}`}
-              className="h-16 rounded-2xl bg-grove-900/90 border border-moss-500/25 active:bg-grove-800 text-2xl font-medium text-sage-100 flex items-center justify-center transition-transform active:scale-95 touch-manipulation shadow-sm"
+              className="h-16 rounded-2xl bg-night-850 active:bg-night-700 text-[1.6rem] font-display text-parchment-50 flex items-center justify-center touch-manipulation"
             >
               {num}
             </button>
@@ -104,7 +101,7 @@ export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, on
             onClick={() => handleDigit('0')}
             disabled={isVerifying}
             aria-label="digit 0"
-            className="h-16 rounded-2xl bg-grove-900/90 border border-moss-500/25 active:bg-grove-800 text-2xl font-medium text-sage-100 flex items-center justify-center transition-transform active:scale-95 touch-manipulation shadow-sm"
+            className="h-16 rounded-2xl bg-night-850 active:bg-night-700 text-[1.6rem] font-display text-parchment-50 flex items-center justify-center touch-manipulation"
           >
             0
           </button>
@@ -113,7 +110,7 @@ export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, on
             onClick={handleDelete}
             disabled={isVerifying}
             aria-label="delete digit"
-            className="h-16 rounded-2xl bg-grove-900/60 border border-moss-500/20 active:bg-grove-800 text-sage-400 flex items-center justify-center transition-transform active:scale-95 touch-manipulation shadow-sm"
+            className="h-16 rounded-2xl active:bg-night-850 text-lichen-400 flex items-center justify-center touch-manipulation"
           >
             <Delete className="w-6 h-6" />
           </button>

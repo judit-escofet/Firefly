@@ -1,172 +1,92 @@
 /** @type {import('tailwindcss').Config} */
+// Firefly palette: a grove at night. Moss-dark greens for everything, parchment for text, and one
+// warm lantern colour that belongs to the firefly (glow, the main button, the route). No purple,
+// no neon, no gradients on text. Older token names (twilight, mystic, gold, pastel) are kept but
+// point at the same grove colours so nothing slips back to the old indigo look.
+const night = {
+  950: '#0c1511',
+  900: '#111d18',
+  850: '#15231d',
+  800: '#1b2c25',
+  700: '#253a31',
+  600: '#33503f',
+};
+const lantern = {
+  100: '#fff3d6',
+  200: '#ffe4a6',
+  300: '#ffd27a',
+  400: '#f6bd55',
+  500: '#e2a23b',
+  600: '#bb8128',
+};
+
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       fontFamily: {
-        mythic: ['Cinzel Decorative', 'serif'],
-        cinzel: ['Cinzel', 'serif'],
-        whimsical: ['Fraunces', 'serif'],
-        sans: ['Plus Jakarta Sans', 'sans-serif'],
+        // Fraunces (soft, slightly wonky serif) for headings and the firefly's voice;
+        // Atkinson Hyperlegible for everything read at a glance while walking.
+        display: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['"Atkinson Hyperlegible"', 'system-ui', 'sans-serif'],
+        whimsical: ['Fraunces', 'Georgia', 'serif'],
+        mythic: ['Fraunces', 'Georgia', 'serif'],
+        cinzel: ['Fraunces', 'Georgia', 'serif'],
       },
       colors: {
-        // Midnight Blues & Royal Purples (NOT pure black!)
-        twilight: {
-          950: '#0e122b',
-          900: '#151a3d',
-          850: '#1d2350',
-          800: '#252d63',
-          700: '#343e85',
-        },
-        mystic: {
-          950: '#180e2b',
-          900: '#241440',
-          850: '#321957',
-          800: '#431f75',
-          700: '#5a2a9c',
-          600: '#793bd4',
-          500: '#9149e8',
-          400: '#a855f7',
-        },
-        grove: {
-          950: '#0a1d18',
-          900: '#0f2c24',
-          850: '#163d32',
-          800: '#1d4f41',
-          700: '#245f4e',
-          600: '#2c735f',
-          400: '#42a386',
-        },
-        // Soft greens for calm text (countdown, demo drawer) and mossy accents
-        sage: {
-          50: '#f3f8f4',
-          100: '#e3efe6',
-          200: '#c9dfcf',
-          300: '#a8c9b2',
-          400: '#86ae93',
-          500: '#678f75',
-        },
-        moss: {
-          300: '#9fd4a8',
-          400: '#6fbf85',
-          500: '#4c9a64',
-        },
-        amber: {
-          lantern: '#f5b94a',
-        },
-        crimson: {
-          900: '#4c0519',
-          300: '#fda4af',
-          800: '#881337',
-          700: '#9f1239',
-          600: '#be123c',
-          500: '#e11d48',
-          400: '#fb7185',
-        },
-        // Shimmering Metallic Gold
-        gold: {
-          100: '#fefce8',
-          200: '#fef08a',
-          300: '#fde047',
-          400: '#facc15',
-          500: '#eab308',
-          600: '#ca8a04',
-          shimmer: '#ffd700',
-        },
-        // Ethereal Pastels
-        pastel: {
-          lavender: '#e9d5ff',
-          mint: '#a7f3d0',
-          rose: '#fbcfe8',
-          sky: '#bae6fd',
-          amber: '#fde68a',
-        },
-        firefly: {
-          100: '#fef9dc',
-          200: '#fcf0ab',
-          300: '#fae37c',
-          400: '#f2cc57',
-          500: '#d9a936',
-          glow: '#ffd843',
-        },
+        night,
+        lantern,
+        parchment: { 50: '#f7f1e3', 100: '#efe6d0', 200: '#ddd1b4' },
+        lichen: { 200: '#c8d2bd', 300: '#a9b8a0', 400: '#869683', 500: '#66756a' },
+        ember: { 400: '#e0634f', 500: '#c9432f', 600: '#a8321f' },
+        grove: { 950: '#0c1511', 900: '#111d18', 850: '#15231d', 800: '#1b2c25', 700: '#253a31', 600: '#33503f', 400: '#5f8a6c' },
+        sage: { 50: '#f3f6ef', 100: '#e3eadb', 200: '#c8d2bd', 300: '#a9b8a0', 400: '#869683', 500: '#66756a' },
+        moss: { 300: '#a6cf98', 400: '#86b878', 500: '#5f9455' },
+        amber: { lantern: lantern[400] },
+        firefly: { 100: lantern[100], 200: lantern[200], 300: lantern[300], 400: lantern[400], 500: lantern[500], glow: '#ffd36b' },
+        // Legacy names → grove colours
+        twilight: { 950: night[950], 900: night[900], 850: night[850], 800: night[800], 700: night[700] },
+        mystic: { 950: night[950], 900: night[900], 850: night[850], 800: night[800], 700: night[700], 600: night[600], 500: night[600], 400: '#5f8a6c' },
+        gold: { 100: lantern[100], 200: lantern[200], 300: lantern[300], 400: lantern[400], 500: lantern[500], 600: lantern[600], shimmer: lantern[400] },
+        pastel: { lavender: '#c8d2bd', mint: '#a6cf98', rose: '#f0b3a6', sky: '#c8d2bd', amber: lantern[200] },
+        crimson: { 900: '#3a1510', 800: '#6e2418', 700: '#8f2c1c', 600: '#a8321f', 500: '#c9432f', 400: '#e0634f', 300: '#f0a596' },
       },
       boxShadow: {
-        'mythic-glow': '0 0 25px rgba(168, 85, 247, 0.35), 0 0 50px rgba(250, 204, 21, 0.2)',
-        'firefly': '0 0 22px rgba(250, 204, 21, 0.45), 0 0 45px rgba(250, 204, 21, 0.25)',
-        'firefly-lg': '0 0 35px rgba(250, 204, 21, 0.7), 0 0 70px rgba(168, 85, 247, 0.4)',
-        'card-shimmer': '0 10px 30px -5px rgba(20, 25, 60, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
-        'grove-glow': '0 0 18px rgba(111, 191, 133, 0.25)',
-        'mythic-halo': '0 0 24px rgba(168, 85, 247, 0.25), 0 0 40px rgba(250, 204, 21, 0.15)',
-        'portal-glow': '0 0 60px rgba(124, 58, 237, 0.35), inset 0 0 40px rgba(250, 204, 21, 0.2)',
+        // Shadows are for lifting things off the map, not for decoration.
+        lift: '0 8px 24px -8px rgba(0, 0, 0, 0.55)',
+        press: 'inset 0 -3px 0 rgba(0, 0, 0, 0.22)',
+        firefly: '0 0 18px rgba(255, 205, 110, 0.45)',
+        'firefly-lg': '0 0 32px rgba(255, 205, 110, 0.6)',
+        'grove-glow': '0 0 0 1px rgba(134, 184, 120, 0.25)',
+        'mythic-glow': '0 8px 24px -8px rgba(0, 0, 0, 0.55)',
+        'mythic-halo': '0 8px 24px -8px rgba(0, 0, 0, 0.55)',
+        'card-shimmer': '0 8px 24px -8px rgba(0, 0, 0, 0.55)',
       },
       animation: {
+        'fade-in': 'fadeIn 0.4s ease-out both',
+        'rise-in': 'riseIn 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both',
+        shake: 'shake 0.35s ease-in-out',
+        bob: 'bob 6s ease-in-out infinite',
+        'wing-l': 'wingL 0.18s ease-in-out infinite alternate',
+        'wing-r': 'wingR 0.18s ease-in-out infinite alternate',
+        breathe: 'breathe 2.4s ease-in-out infinite',
         'pulse-slow': 'pulse 3.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'mythic-float': 'mythicFloat 5s ease-in-out infinite',
-        'fae-flutter-l': 'faeFlutterL 0.22s ease-in-out infinite alternate',
-        'fae-flutter-r': 'faeFlutterR 0.22s ease-in-out infinite alternate',
-        'orbit-1': 'orbit1 4s linear infinite',
-        'orbit-2': 'orbit2 6s linear infinite',
-        'orbit-3': 'orbit3 5s linear infinite reverse',
-        'aurora-shift': 'auroraShift 10s ease-in-out infinite alternate',
-        'shimmer': 'shimmer 2.5s infinite linear',
-        'fade-in': 'fadeIn 0.35s ease-out both',
-        'shake': 'shake 0.35s ease-in-out',
-        'wisp-drift': 'wispDrift 9s ease-in-out infinite',
       },
       keyframes: {
-        mythicFloat: {
-          '0%, 100%': { transform: 'translate(0, 0) scale(1) rotate(0deg)' },
-          '20%': { transform: 'translate(4px, -8px) scale(1.03) rotate(2deg)' },
-          '45%': { transform: 'translate(-5px, -15px) scale(0.97) rotate(-3deg)' },
-          '70%': { transform: 'translate(-8px, -7px) scale(1.02) rotate(-1deg)' },
-          '85%': { transform: 'translate(3px, -3px) scale(0.99) rotate(1deg)' },
+        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+        riseIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        shake: { '0%, 100%': { transform: 'translateX(0)' }, '25%': { transform: 'translateX(-7px)' }, '75%': { transform: 'translateX(7px)' } },
+        // A firefly doesn't hover in place: a lazy, slightly lopsided drift.
+        bob: {
+          '0%, 100%': { transform: 'translate(0, 0) rotate(-2deg)' },
+          '30%': { transform: 'translate(5px, -7px) rotate(3deg)' },
+          '60%': { transform: 'translate(-3px, -11px) rotate(-1deg)' },
+          '80%': { transform: 'translate(-6px, -4px) rotate(-4deg)' },
         },
-        faeFlutterL: {
-          '0%': { transform: 'rotate(-4deg) scaleY(1)' },
-          '100%': { transform: 'rotate(-18deg) scaleY(0.85)' },
-        },
-        faeFlutterR: {
-          '0%': { transform: 'rotate(4deg) scaleY(1)' },
-          '100%': { transform: 'rotate(18deg) scaleY(0.85)' },
-        },
-        orbit1: {
-          '0%': { transform: 'rotate(0deg) translateX(36px) rotate(0deg)' },
-          '100%': { transform: 'rotate(360deg) translateX(36px) rotate(-360deg)' },
-        },
-        orbit2: {
-          '0%': { transform: 'rotate(120deg) translateX(44px) rotate(-120deg)' },
-          '100%': { transform: 'rotate(480deg) translateX(44px) rotate(-480deg)' },
-        },
-        orbit3: {
-          '0%': { transform: 'rotate(240deg) translateX(30px) rotate(-240deg)' },
-          '100%': { transform: 'rotate(600deg) translateX(30px) rotate(-600deg)' },
-        },
-        auroraShift: {
-          '0%': { filter: 'hue-rotate(0deg) brightness(1)' },
-          '50%': { filter: 'hue-rotate(25deg) brightness(1.15)' },
-          '100%': { filter: 'hue-rotate(-20deg) brightness(1)' },
-        },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
-        },
-        fadeIn: {
-          '0%': { opacity: '0', transform: 'translateY(6px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        shake: {
-          '0%, 100%': { transform: 'translateX(0)' },
-          '25%': { transform: 'translateX(-8px)' },
-          '75%': { transform: 'translateX(8px)' },
-        },
-        wispDrift: {
-          '0%, 100%': { transform: 'translate(0, 0)', opacity: '0.4' },
-          '50%': { transform: 'translate(18px, -26px)', opacity: '0.9' },
-        }
-      }
+        wingL: { '0%': { transform: 'rotate(4deg)' }, '100%': { transform: 'rotate(-14deg)' } },
+        wingR: { '0%': { transform: 'rotate(-4deg)' }, '100%': { transform: 'rotate(14deg)' } },
+        breathe: { '0%, 100%': { opacity: '0.75' }, '50%': { opacity: '1' } },
+      },
     },
   },
   plugins: [],
