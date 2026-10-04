@@ -51,7 +51,7 @@ app.http('companion-turn', {
       name: str(body.name, 40) || undefined,
       user_text: str(body.user_text),
       mode,
-      context: { eta_s: num(ctx.eta_s), remaining_m: num(ctx.remaining_m), checkin_reason: str(ctx.checkin_reason, 40) || null },
+      context: { eta_s: num(ctx.eta_s), remaining_m: num(ctx.remaining_m), checkin_reason: str(ctx.checkin_reason, 40) || null, eta_due: ctx.eta_due === true },
       memory: await memoriesFor(userId),
       news,
       history,

@@ -1,8 +1,12 @@
 // Conversation logic for the companion. Pure: clock, voice and API are injected (unit-tested).
 //
-// chat     after a final transcript followed by ~1.2 s of silence, speak the reply. The request
+// chat     after a final transcript followed by ~1.8 s of silence, speak the reply. The request
 //          starts speculatively at the final (saves ~1 s, C2) and is discarded if she goes on.
-//          After 45 s of quiet, offer a topic (news, ETA or memory) — mode "idle".
+//          Never interrupts: if she starts talking again while a reply is on its way, the reply
+//          is dropped and her words are answered together once she pauses.
+//          After 90 s of quiet, casually bring something up (mode "idle"); each further silence
+//          waits twice as long (90 s, 3 min, 6 min…), reset as soon as she talks.
+// ETA      time to home is mentioned at most once every 5 minutes (context.eta_due), not every turn.
 // checkin  on checkin.request: speak the prompt, then classify her next words (keywords first,
 //          the model only if unclear) → checkin.answered {ok, text} within ~1 s; 20 s of
 //          silence after the prompt → {ok: null}.
@@ -12,8 +16,10 @@
 
 import { classifyCheckinKeywords } from './checkinWords.js';
 
-export const TURN_SILENCE_MS = 1200;
-export const IDLE_MS = 45000;
+export const TURN_SILENCE_MS = 1800;
+export const IDLE_MS = 90000;
+export const IDLE_MAX_MS = 8 * 60e3;
+export const ETA_GAP_MS = 5 * 60e3;
 export const CHECKIN_SILENCE_MS = 20000;
 export const NEWS_GAP_MS = 3 * 60e3;
 
@@ -35,6 +41,9 @@ export function createBrain({
   let pending = ''; // finals not yet answered
   let lastFinalAt = 0;
   let lastNewsAt = -Infinity;
+  let lastEtaAt = 0; // the walk screen shows the ETA; the firefly says it at most every 5 min
+  let lastHeardAt = 0; // any partial or final from her
+  let idleStreak = 0; // silences in a row: each idle prompt waits twice as long
   let awaitingAnswer = false;
   let checkinReason = null;
   let inFlight = false;
@@ -55,7 +64,7 @@ export function createBrain({
 
   function armIdle() {
     if (!active || alertActive || awaitingAnswer) return clear('idle');
-    set('idle', () => takeTurn({ idle: true }), IDLE_MS);
+    set('idle', () => takeTurn({ idle: true }), Math.min(IDLE_MS * 2 ** idleStreak, IDLE_MAX_MS));
   }
 
   async function speak(text, t0) {
@@ -66,11 +75,12 @@ export function createBrain({
   // Build the request for the current state without changing it (speculation must be free).
   function request({ idle, userText }) {
     const offerNews = clock.now() - lastNewsAt >= NEWS_GAP_MS;
+    const etaDue = !alertActive && clock.now() - lastEtaAt >= ETA_GAP_MS;
     return turn({
       ...identity(),
       user_text: userText,
       mode: alertActive ? 'calm' : idle ? 'idle' : 'chat',
-      context: { ...getContext(), checkin_reason: null },
+      context: { ...getContext(), checkin_reason: null, eta_due: etaDue },
       history: history.slice(-8),
       news: offerNews ? getNews().slice(0, 3) : [],
     });
@@ -94,13 +104,22 @@ export function createBrain({
     pending = '';
     inFlight = true;
     const t0 = idle || !userText ? clock.now() : lastFinalAt;
+    const etaWasDue = clock.now() - lastEtaAt >= ETA_GAP_MS;
     const reuse = !idle && userText && spec?.text === userText ? spec.promise : null;
     spec = null;
+    if (idle) idleStreak += 1;
     try {
       const reply = await (reuse ?? request({ idle, userText }));
       if (!active) return;
+      // She started talking again while the reply was on its way: don't talk over her. Keep her
+      // earlier words and answer everything together once she pauses.
+      if (lastHeardAt > t0) {
+        if (userText) pending = `${userText} ${pending}`.trim();
+        return;
+      }
       if (userText) history.push({ speaker: 'user', text: userText });
       if (reply.topic === 'news') lastNewsAt = clock.now();
+      if (etaWasDue || reply.topic === 'eta') lastEtaAt = clock.now();
       if (awaitingAnswer) return; // a check-in started meanwhile: don't talk over it
       await speak(reply.reply_text, t0);
     } finally {
@@ -145,6 +164,9 @@ export function createBrain({
       history.length = 0;
       pending = '';
       lastNewsAt = -Infinity;
+      lastEtaAt = clock.now();
+      lastHeardAt = 0;
+      idleStreak = 0;
       const greet = (await line('greeting')) ?? "Hey, I'm here with you. How was your day?";
       if (active) await speak(greet, clock.now());
       armIdle();
@@ -154,6 +176,8 @@ export function createBrain({
       // While the firefly talks, partials are ignored (the companion stops the voice on
       // barge-in); her finished sentence still counts.
       if (!active || (speaking && !final)) return;
+      lastHeardAt = clock.now();
+      idleStreak = 0;
       clear('idle');
       if (awaitingAnswer) {
         if (final) answerCheckin(text);

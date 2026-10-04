@@ -14,6 +14,7 @@ import WalkScreen from './screens/WalkScreen';
 import CountdownScreen from './screens/CountdownScreen';
 import HomeScreen from './screens/HomeScreen';
 import DemoControls from './components/DemoControls';
+import DestinationSheet from './components/DestinationSheet';
 
 // The P4 app shell: screens, walk lifecycle and the P4 events of the team contract
 // (walk.started, position.updated, pin.entered, walk.ended). The countdown and the "alerted"
@@ -44,6 +45,7 @@ export default function App({ modules }) {
   const [showCountdown, setShowCountdown] = useState(false);
   const [alerted, setAlerted] = useState(false);
   const [startError, setStartError] = useState(null);
+  const [choosingDestination, setChoosingDestination] = useState(false);
   const heldMic = useRef(null);
   const walkRef = useRef(null);
 
@@ -94,10 +96,11 @@ export default function App({ modules }) {
     }
   }, []);
 
-  // "Walk with me". Must open the mic synchronously inside the tap (iOS): P1 and P2 join this
-  // already-open mic when walk.started arrives after the route is planned.
+  // "Walk with me" opens the destination sheet; its "Start walk" tap calls this. Must open the mic
+  // synchronously inside that tap (iOS): P1 and P2 join this already-open mic when walk.started
+  // arrives after the route is planned.
   const startWalk = useCallback(
-    (prof, { file = null } = {}) => {
+    (prof, { file = null, destination = null } = {}) => {
       if (walkRef.current) return;
       setStartError(null);
       if (!micDisabled() || file) heldMic.current = acquireMic(file ? { file } : {});
@@ -107,7 +110,7 @@ export default function App({ modules }) {
       (async () => {
         // Mock mode (and no GPS fix within 6 s) starts at the demo route's start near the venue.
         const start = await locationService.currentPosition({ lat: MOCK_ROUTE[0][0], lng: MOCK_ROUTE[0][1] });
-        const w = await api.startWalk(prof, start);
+        const w = await api.startWalk(prof, start, destination);
         walkRef.current = w;
         setWalk(w);
         bus.emit('walk.started', { walk_id: w.walk_id, share_url: w.share_url, route: w.route });
@@ -150,7 +153,7 @@ export default function App({ modules }) {
           error={startError}
           onStartSetup={() => setScreen('setup')}
           onStartDemo={handleTryDemo}
-          onStartWalk={() => startWalk(profile)}
+          onStartWalk={() => setChoosingDestination(true)}
         />
       )}
 
@@ -185,6 +188,16 @@ export default function App({ modules }) {
           onDone={() => setShowCountdown(false)}
         />
       )}
+
+      <DestinationSheet
+        isOpen={choosingDestination && screen === 'welcome'}
+        home={profile?.home ?? null}
+        onClose={() => setChoosingDestination(false)}
+        onStart={(destination) => {
+          setChoosingDestination(false);
+          startWalk(profile, { destination });
+        }}
+      />
 
       {screen === 'home' && <HomeScreen summary={summary} contacts={profile?.contacts || []} onReset={() => setScreen('welcome')} />}
 

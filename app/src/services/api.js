@@ -113,13 +113,31 @@ export const api = {
     return { profile: local, synced, error };
   },
 
+  // Places for "Where are you walking to?" → [{label, detail, lat, lng}] (near her when known).
+  async searchPlaces(q, near = null) {
+    const params = new URLSearchParams({ q });
+    if (near) { params.set('lat', near.lat); params.set('lng', near.lng); }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 7000);
+    try {
+      const res = await fetch(`${BASE}/api/geocode?${params}`, { signal: ctrl.signal });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data.results ?? [];
+    } finally {
+      clearTimeout(timer);
+    }
+  },
+
+  // destination: {lat, lng, label} chosen when the walk starts; defaults to her saved home.
   // → normalized walk {walk_id, share_url, route{points[[lat,lng]], distance_m, eta_s}, destination, started_at}
-  async startWalk(profile, start) {
-    const dest = profile.home ?? MOCK_HOME;
+  async startWalk(profile, start, destination = null) {
+    const dest = destination ?? profile.home ?? MOCK_HOME;
     const mock = isMockModeEnabled();
     let walk;
     if (mock) {
-      walk = localWalk(start, dest, { mock: true });
+      // The demo route near the venue, unless she picked somewhere else.
+      walk = destination ? localWalk(start, dest, { mock: false }) : localWalk(start, dest, { mock: true });
     } else {
       const body = { user_id: profile.user_id, start, destination: { lat: dest.lat, lng: dest.lng, label: dest.label ?? 'Home' } };
       try {

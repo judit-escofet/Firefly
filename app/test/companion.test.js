@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createBrain, TURN_SILENCE_MS, IDLE_MS, CHECKIN_SILENCE_MS, NEWS_GAP_MS } from '../src/companion/brain.js';
+import { createBrain, TURN_SILENCE_MS, IDLE_MS, CHECKIN_SILENCE_MS, NEWS_GAP_MS, ETA_GAP_MS } from '../src/companion/brain.js';
 import { classifyCheckinKeywords } from '../src/companion/checkinWords.js';
 import { parseServerMessage, pcm16Base64 } from '../src/companion/stt.js';
 import { createFakeClock } from '../src/guardian/clock.js';
@@ -78,7 +78,8 @@ describe('companion brain', () => {
     t.clock.advance(TURN_SILENCE_MS);
     await flush();
     expect(t.turns[1].news).toEqual([]);
-    for (let s = 0; s < NEWS_GAP_MS / 1000 + 60; s++) {
+    // Long enough for two idle prompts (90 s, then 3 min later): the second comes after the gap.
+    for (let s = 0; s < NEWS_GAP_MS / 1000 + 180; s++) {
       t.clock.advance(1000); // idle prompts happen along the way
       await flush(2);
     }
@@ -182,5 +183,55 @@ describe('live transcription protocol', () => {
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     const v = new DataView(bytes.buffer);
     expect([v.getInt16(0, true), v.getInt16(2, true), v.getInt16(4, true), v.getInt16(6, true)]).toEqual([0, 32767, -32768, 16383]);
+  });
+
+  it('never talks over her: a reply that arrives after she started talking again is dropped', async () => {
+    let release;
+    const t = setup({ reply: () => new Promise((r) => (release = () => r({ reply_text: 'Ha, nice!', topic: 'day' }))) });
+    await t.brain.start();
+    t.brain.heard({ text: 'so today', final: true });
+    t.clock.advance(TURN_SILENCE_MS); // her pause: the reply request goes out
+    t.brain.heard({ text: 'and then', final: false }); // …but she keeps going
+    release();
+    await flush();
+    expect(t.said).toEqual(['Hi! How was your day?']); // nothing said over her
+    t.brain.heard({ text: 'and then my exam got moved', final: true });
+    t.clock.advance(TURN_SILENCE_MS);
+    await flush();
+    release?.();
+    await flush();
+    expect(t.turns.at(-1).user_text).toBe('so today and then my exam got moved'); // answered together
+  });
+
+  it('time to home: flagged due at most once every 5 minutes', async () => {
+    const t = setup();
+    await t.brain.start();
+    const talk = async (text) => {
+      t.brain.heard({ text, final: true });
+      t.clock.advance(TURN_SILENCE_MS);
+      await flush();
+    };
+    await talk('hey');
+    expect(t.turns.at(-1).context.eta_due).toBe(false); // just started
+    t.clock.advance(ETA_GAP_MS);
+    await flush(); // let the idle prompts that fired during those 5 minutes finish
+    await talk('how are you');
+    expect(t.turns.at(-1).context.eta_due).toBe(true); // 5 min in: due once
+    await talk('cool');
+    expect(t.turns.at(-1).context.eta_due).toBe(false); // not again right away
+  });
+
+  it('fills silences less and less often: 90 s, then twice as long', async () => {
+    const t = setup();
+    await t.brain.start();
+    t.clock.advance(IDLE_MS);
+    await flush();
+    expect(t.turns.filter((x) => x.mode === 'idle')).toHaveLength(1);
+    t.clock.advance(IDLE_MS); // 90 s more: not yet (the next one waits 3 min)
+    await flush();
+    expect(t.turns.filter((x) => x.mode === 'idle')).toHaveLength(1);
+    t.clock.advance(IDLE_MS);
+    await flush();
+    expect(t.turns.filter((x) => x.mode === 'idle')).toHaveLength(2);
   });
 });
