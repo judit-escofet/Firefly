@@ -28,17 +28,15 @@ describe('event bus (A11)', () => {
 });
 
 describe('PINs (A1): hashed in the browser with the user id as salt', () => {
-  it('hashes, distinguishes cancel / duress, rejects wrong PINs', async () => {
+  it('hashes; her PIN cancels, ANY other complete code is duress (help is called silently)', async () => {
     const u = 'u_abc123';
     const c = await hashPin('1234', u);
-    const d = await hashPin('9999', u);
     expect(c).toMatch(/^[0-9a-f]{64}$/);
-    expect(c).not.toBe(d);
     expect(c).not.toContain('1234');
     expect(await hashPin('1234', 'u_other')).not.toBe(c); // salted per user
-    expect(await verifyPin('1234', u, c, d)).toBe('cancel');
-    expect(await verifyPin('9999', u, c, d)).toBe('duress');
-    expect(await verifyPin('0000', u, c, d)).toBe(null);
+    expect(await verifyPin('1234', u, c)).toBe('cancel');
+    for (const wrong of ['9999', '0000', '1235', '4321']) expect(await verifyPin(wrong, u, c)).toBe('duress');
+    expect(await verifyPin('12', u, c)).toBe(null); // still typing
   });
 });
 

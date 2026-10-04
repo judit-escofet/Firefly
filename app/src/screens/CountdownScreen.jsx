@@ -8,10 +8,10 @@ import { Delete, CheckCircle2 } from 'lucide-react';
  * Calm countdown screen (P4 spec): dim, no red, no word like "alert" anyone nearby could read,
  * a quiet ring and a vibration pattern. The 10 s countdown itself is the Guardian's
  * (alert.state → secondsLeft); this screen only checks the PIN locally against the saved
- * hashes and emits pin.entered {kind}. A wrong PIN just clears the pad (A7: cancel and duress
- * both show the identical "All good" screen).
+ * hash and emits pin.entered {kind}: her PIN → cancel; ANY other code → duress (help is called
+ * silently). Both show the identical "All good" screen.
  */
-export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, duressPinHash, onDone }) {
+export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, onDone }) {
   const [pinDigits, setPinDigits] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [shake, setShake] = useState(false);
@@ -29,7 +29,7 @@ export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, du
     if (next.length < 4) return;
 
     setIsVerifying(true);
-    const kind = await verifyPin(next, userId, cancelPinHash, duressPinHash);
+    const kind = await verifyPin(next, userId, cancelPinHash);
     if (kind) {
       countdownFeedback.stop();
       bus.emit('pin.entered', { kind });

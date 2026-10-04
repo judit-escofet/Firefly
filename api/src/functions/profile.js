@@ -27,8 +27,11 @@ function validate(body) {
   if (codePhrase.split(/\s+/).filter(Boolean).length < 3) throw badRequest('code_phrase must be at least 3 words');
 
   const pinHash = requireString(body.pin_hash, 'pin_hash', { max: 500 });
-  const duressPinHash = requireString(body.duress_pin_hash, 'duress_pin_hash', { max: 500 });
-  if (pinHash === duressPinHash) throw badRequest('pin_hash and duress_pin_hash must be different');
+  // No separate duress PIN any more: any wrong code during the countdown counts as duress (the
+  // app decides). An older client may still send one; then it must differ from the PIN.
+  const duressPinHash = body.duress_pin_hash == null || body.duress_pin_hash === '' ? null
+    : requireString(body.duress_pin_hash, 'duress_pin_hash', { max: 500 });
+  if (duressPinHash && pinHash === duressPinHash) throw badRequest('pin_hash and duress_pin_hash must be different');
 
   // Optional (team plan): news interests and the home location.
   let interests = [];

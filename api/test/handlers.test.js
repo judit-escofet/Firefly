@@ -67,6 +67,7 @@ test('profile: bad input returns 400 with a clear message', async () => {
     [{ ...goodProfile, code_phrase: 'two words' }, /3 words/],
     [{ ...goodProfile, duress_pin_hash: 'h1' }, /different/],
     [{ ...goodProfile, pin_hash: undefined }, /pin_hash/],
+    [{ ...goodProfile, duress_pin_hash: 'h1' }, /different/], // an old client's duress PIN must still differ
   ];
   for (const [body, msg] of cases) {
     const res = await call('profile', { body });
@@ -245,4 +246,12 @@ test('walk route points are [lat, lng] pairs, as in the team plan', async () => 
   const res = await call('walks', { body: { user_id: 'u_test', start: { lat: 40.7425, lng: -74.1781 }, destination: { lat: 40.739, lng: -74.172 } } });
   const [first] = res.jsonBody.route.points;
   assert.ok(Array.isArray(first) && first.length === 2 && first.every(Number.isFinite));
+});
+
+test('profile: one PIN is enough (no duress PIN needed)', async () => {
+  const { duress_pin_hash, ...onePin } = goodProfile;
+  const res = await call('profile', { body: onePin });
+  assert.equal(res.status, 200);
+  const insert = calls.find((c) => /INSERT INTO users/.test(c.sql));
+  assert.equal(insert.params[5], null);
 });

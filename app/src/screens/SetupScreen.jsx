@@ -38,8 +38,6 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
 
   const [cancelPin, setCancelPin] = useState('');
   const [confirmCancelPin, setConfirmCancelPin] = useState('');
-  const [duressPin, setDuressPin] = useState('');
-  const [confirmDuressPin, setConfirmDuressPin] = useState('');
 
   // Step 3: News Interests and Home Address
   const [newsInterests, setNewsInterests] = useState(initialProfile?.news_interests || ['tech', 'music']);
@@ -122,19 +120,6 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
       return;
     }
 
-    if (!/^\d{4}$/.test(duressPin)) {
-      setError('Duress PIN must be exactly 4 digits.');
-      return;
-    }
-    if (duressPin !== confirmDuressPin) {
-      setError('Duress PIN confirmation does not match.');
-      return;
-    }
-
-    if (cancelPin === duressPin) {
-      setError('Cancel PIN and Duress PIN must be strictly different.');
-      return;
-    }
 
     setError('');
     setStep(3);
@@ -156,7 +141,6 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
     try {
       const userId = getOrCreateUserId();
       const cancelPinHash = await hashPin(cancelPin, userId);
-      const duressPinHash = await hashPin(duressPin, userId);
 
       // Only hashes leave this screen: raw PINs are never stored or sent (A1).
       const profilePayload = {
@@ -167,7 +151,6 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
           .map(c => ({ id: c.id, name: c.name.trim(), phone: normalizePhone(c.phone) })),
         code_phrase: codePhrase.trim().toLowerCase(),
         pin_hash: cancelPinHash,
-        duress_pin_hash: duressPinHash,
         news_interests: newsInterests,
         home: { lat: home.lat, lng: home.lng, label: (home.label || 'Home').trim() },
       };
@@ -301,15 +284,15 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
           </div>
         )}
 
-        {/* STEP 2: Code Phrase & Two PINs */}
+        {/* STEP 2: Code Phrase & PIN */}
         {step === 2 && (
           <div className="space-y-4 animate-fade-in max-h-[70vh] overflow-y-auto pr-1">
             <div>
               <h2 className="text-2xl font-mythic font-bold text-gold-metallic mb-1">
-                Whispers & Twin PINs
+                Whispers & Your PIN
               </h2>
               <p className="text-xs text-pastel-lavender/80 leading-relaxed">
-                Secret verbal triggers and dual PINs for undetectable safety.
+                A secret phrase and one PIN for undetectable safety.
               </p>
             </div>
 
@@ -354,22 +337,22 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
               )}
             </div>
 
-            {/* Dual PINs */}
+            {/* PIN */}
             <div className="p-4 rounded-2xl glass-mythic space-y-4 border border-gold-400/20">
               <div className="flex items-center gap-2">
                 <KeyRound className="w-4 h-4 text-gold-400" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-                  Two Distinct PINs
+                  Your PIN
                 </h3>
               </div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                Both display identically on screen when entered, so nobody watching can tell which was typed.
+                Your PIN stops the countdown. Typing any other code looks exactly the same on screen ("All good"), but quietly calls for help and alerts your contacts, so you're safe even if someone makes you cancel.
               </p>
 
               {/* Cancel PIN */}
               <div className="space-y-1.5 pt-1 border-t border-white/10">
                 <span className="text-xs font-semibold text-pastel-mint">
-                  1. Cancel PIN (safely ends countdown)
+                  PIN (safely ends the countdown)
                 </span>
                 <div className="grid grid-cols-2 gap-2">
                   <input
@@ -393,32 +376,6 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
                 </div>
               </div>
 
-              {/* Duress PIN */}
-              <div className="space-y-1.5 pt-2 border-t border-white/10">
-                <span className="text-xs font-semibold text-gold-300">
-                  2. Duress PIN (silently notifies guardians)
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="password"
-                    maxLength={4}
-                    inputMode="numeric"
-                    placeholder="4 digits"
-                    value={duressPin}
-                    onChange={e => setDuressPin(e.target.value.replace(/\D/g, ''))}
-                    className="px-3 py-2 rounded-xl bg-twilight-950 border border-white/15 text-xs text-center text-white tracking-widest focus:outline-none focus:border-gold-400"
-                  />
-                  <input
-                    type="password"
-                    maxLength={4}
-                    inputMode="numeric"
-                    placeholder="Confirm"
-                    value={confirmDuressPin}
-                    onChange={e => setConfirmDuressPin(e.target.value.replace(/\D/g, ''))}
-                    className="px-3 py-2 rounded-xl bg-twilight-950 border border-white/15 text-xs text-center text-white tracking-widest focus:outline-none focus:border-gold-400"
-                  />
-                </div>
-              </div>
             </div>
           </div>
         )}

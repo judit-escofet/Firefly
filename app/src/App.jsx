@@ -30,7 +30,6 @@ async function demoProfile() {
     contacts: MOCK_PROFILE.contacts,
     code_phrase: MOCK_PROFILE.code_phrase,
     pin_hash: await hashPin(MOCK_PROFILE.cancel_pin, user_id),
-    duress_pin_hash: await hashPin(MOCK_PROFILE.duress_pin, user_id),
     news_interests: MOCK_PROFILE.news_interests,
     home: MOCK_PROFILE.home,
   };
@@ -50,7 +49,7 @@ export default function App({ modules }) {
   const walkRef = useRef(null);
 
   // Follow the Guardian's escalation state. When the countdown runs out ("alerted"), call the demo
-  // dispatcher from the app. (A duress PIN never reaches "alerted" on screen; the backend calls
+  // dispatcher from the app. (A wrong PIN never reaches "alerted" on screen; the backend calls
   // the dispatcher silently for that one.)
   // What started the alert, and (for "I've been stabbed"-style phrases) what she said.
   const lastDanger = useRef({ source: 'scream', said: null });
@@ -184,7 +183,6 @@ export default function App({ modules }) {
           secondsLeft={alert.state === 'countdown' ? alert.seconds_left : 0}
           userId={profile?.user_id}
           cancelPinHash={profile?.pin_hash}
-          duressPinHash={profile?.duress_pin_hash}
           onDone={() => setShowCountdown(false)}
         />
       )}

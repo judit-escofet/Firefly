@@ -25,7 +25,6 @@ export const MOCK_PROFILE = {
   ],
   code_phrase: 'i think i left the oven on',
   cancel_pin: '1234',
-  duress_pin: '9999',
   news_interests: ['tech', 'music', 'basketball'],
   home: MOCK_HOME,
 };

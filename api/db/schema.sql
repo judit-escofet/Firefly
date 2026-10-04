@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS users (
 );
 ALTER TABLE users ADD COLUMN IF NOT EXISTS interests TEXT[] NOT NULL DEFAULT '{}';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS home JSONB;
+-- One PIN only now: any wrong code during the countdown is treated as duress.
+ALTER TABLE users ALTER COLUMN duress_pin_hash DROP NOT NULL;
 
 CREATE TABLE IF NOT EXISTS walks (
   walk_id          TEXT PRIMARY KEY,

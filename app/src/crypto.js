@@ -26,28 +26,20 @@ export async function hashPin(pin, userId) {
 }
 
 /**
- * Fast client-side PIN verification against saved hashes.
+ * Fast client-side PIN check during the countdown. There is one PIN: it cancels. ANY other
+ * complete code counts as duress: the screen looks the same ("All good") but help is called and
+ * contacts are alerted, so someone forcing her to cancel can't tell.
  * @param {string} rawPin - Input PIN from keypad
  * @param {string} userId - User identifier
- * @param {string} cancelHash - Saved cancel PIN hash
- * @param {string} duressHash - Saved duress PIN hash
- * @returns {Promise<'cancel' | 'duress' | null>}
+ * @param {string} cancelHash - Saved PIN hash
+ * @returns {Promise<'cancel' | 'duress' | null>} null only while the code is incomplete
  */
-export async function verifyPin(rawPin, userId, cancelHash, duressHash) {
+export async function verifyPin(rawPin, userId, cancelHash) {
   if (!rawPin || rawPin.length < 4 || !userId) {
     return null;
   }
-
   const calculatedHash = await hashPin(rawPin, userId);
-
-  if (calculatedHash === cancelHash) {
-    return 'cancel';
-  }
-  if (calculatedHash === duressHash) {
-    return 'duress';
-  }
-
-  return null;
+  return calculatedHash === cancelHash ? 'cancel' : 'duress';
 }
 
 /**
