@@ -38,11 +38,12 @@ app.http('walks', {
 
     const { rows } = await db.query(
       `INSERT INTO walks (walk_id, user_id, start_lat, start_lng, dest_lat, dest_lng, dest_label,
-                          route, distance_m, eta_s, share_token)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                          route, distance_m, eta_s, share_token, steps)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [walkId, body.user_id, start[0], start[1], dest[0], dest[1], label,
-       JSON.stringify(route.points), Math.round(route.distance_m), Math.round(route.eta_s), shareToken],
+       JSON.stringify(route.points), Math.round(route.distance_m), Math.round(route.eta_s), shareToken,
+       JSON.stringify(route.steps || [])],
     );
 
     const base = baseUrl(request);

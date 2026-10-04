@@ -7,6 +7,7 @@ import { hashPin, getOrCreateUserId } from './crypto';
 import { setMockMode, MOCK_PROFILE, MOCK_ROUTE } from './services/mockData';
 import { acquireMic } from './audio/micHub.js';
 import { startDispatchCall, hangUpDispatchCall, dismissDispatchCall } from './services/dispatchCall';
+import { navigation } from './services/navigation';
 
 import WelcomeScreen from './screens/WelcomeScreen';
 import SetupScreen from './screens/SetupScreen';
@@ -78,6 +79,7 @@ export default function App({ modules }) {
     if (!w) return;
     walkRef.current = null;
     locationService.stop();
+    navigation.stop();
     wakeLockService.disable();
     hangUpDispatchCall();
     dismissDispatchCall();
@@ -114,6 +116,14 @@ export default function App({ modules }) {
         setWalk(w);
         bus.emit('walk.started', { walk_id: w.walk_id, share_url: w.share_url, route: w.route });
         locationService.start(w, () => endWalk('arrived'));
+        // Turn-by-turn directions; after a reroute the map and progress use the new route.
+        navigation.start(w, {
+          onRouteChange: (nw) => {
+            walkRef.current = nw;
+            setWalk(nw);
+            locationService.updateRoute(nw);
+          },
+        });
         setScreen('walk');
         if (file && heldMic.current) {
           // "Walk with test audio": play the recording through the mic pipeline once P1 is listening.

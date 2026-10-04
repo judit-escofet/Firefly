@@ -117,6 +117,11 @@ export const locationService = {
     notify();
   },
 
+  // After a reroute: measure progress against the new route (used for offline/demo walks).
+  updateRoute(newWalk) {
+    if (walk && newWalk) walk = newWalk;
+  },
+
   stop() {
     timers.forEach((t) => clearInterval(t));
     timers = [];

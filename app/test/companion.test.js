@@ -252,4 +252,27 @@ describe('live transcription protocol', () => {
     await flush();
     expect(t.turns.filter((x) => x.mode === 'idle')).toHaveLength(2);
   });
+
+  it('directions: spoken at once when quiet, after she finishes if she is talking, never during an alert', async () => {
+    const t = setup();
+    await t.brain.start();
+    t.brain.navPrompt('In 200 feet, turn left onto Summit Street.');
+    await flush();
+    expect(t.said.at(-1)).toBe('In 200 feet, turn left onto Summit Street.');
+
+    t.brain.heard({ text: 'so I was saying', final: false }); // she is mid-sentence
+    t.brain.navPrompt('Turn left onto Summit Street.');
+    t.clock.advance(1000);
+    await flush();
+    expect(t.said.at(-1)).not.toBe('Turn left onto Summit Street.'); // not over her
+    t.clock.advance(1000); // she paused
+    await flush();
+    expect(t.said.at(-1)).toBe('Turn left onto Summit Street.');
+
+    t.brain.alertState({ state: 'countdown', seconds_left: 10 });
+    t.brain.navPrompt('Turn right.');
+    t.clock.advance(1000);
+    await flush();
+    expect(t.said).not.toContain('Turn right.');
+  });
 });

@@ -255,3 +255,16 @@ test('profile: one PIN is enough (no duress PIN needed)', async () => {
   const insert = calls.find((c) => /INSERT INTO users/.test(c.sql));
   assert.equal(insert.params[5], null);
 });
+
+test('reroute: plans from where she is to the same destination and stores it', async () => {
+  responders = [[/SELECT dest_lat, dest_lng, ended_at FROM walks/, () => ({ rows: [{ dest_lat: 40.739, dest_lng: -74.172, ended_at: null }] })]];
+  const res = await call('reroute', { params: { walk_id: 'w_456' }, body: { lat: 40.741, lng: -74.176 } });
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.jsonBody.route.points[0], [40.741, -74.176]);
+  assert.deepEqual(res.jsonBody.route.points.at(-1), [40.739, -74.172]);
+  assert.equal(res.jsonBody.steps.at(-1).type, 'arrive');
+  assert.ok(calls.some((c) => /UPDATE walks SET route = \$2, steps = \$3/.test(c.sql)));
+  responders = [[/SELECT dest_lat/, () => ({ rows: [{ dest_lat: 1, dest_lng: 1, ended_at: new Date() }] })]];
+  assert.equal((await call('reroute', { params: { walk_id: 'w_456' }, body: { lat: 40.741, lng: -74.176 } })).status, 409);
+  assert.equal((await call('reroute', { params: { walk_id: 'w_456' }, body: { lat: 'x' } })).status, 400);
+});

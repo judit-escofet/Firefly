@@ -44,3 +44,22 @@ test('OSM_ROUTES=0 skips OpenStreetMap entirely', async () => {
   assert.equal(called, false);
   delete process.env.OSM_ROUTES;
 });
+
+test('turn-by-turn instructions read like Google Maps', () => {
+  const { stepText } = require('../lib/maps');
+  assert.equal(stepText({ type: 'depart', name: 'Warren Street', bearing: 95 }), 'Head east on Warren Street');
+  assert.equal(stepText({ type: 'turn', modifier: 'left', name: 'Summit Street' }), 'Turn left onto Summit Street');
+  assert.equal(stepText({ type: 'turn', modifier: 'right', name: '' }), 'Turn right');
+  assert.equal(stepText({ type: 'turn', modifier: 'slight left', name: 'Market Street' }), 'Keep left onto Market Street');
+  assert.equal(stepText({ type: 'roundabout', exit: 2, name: 'Broad Street' }), 'At the roundabout, take exit 2 onto Broad Street');
+  assert.equal(stepText({ type: 'arrive' }), 'You have arrived');
+});
+
+test('very short legs are folded into one instruction; street-name changes are dropped', () => {
+  const { buildSteps } = require('../lib/maps');
+  const st = (type, modifier, name, distance) => ({ maneuver: { type, modifier, location: [-74.17, 40.74], bearing_after: 90 }, name, distance });
+  const out = buildSteps([st('depart', null, 'Warren Street', 50), st('turn', 'left', '', 6), st('turn', 'right', 'Summit Street', 80),
+    st('new name', 'straight', 'Summit Avenue', 40), st('arrive', null, '', 0)]);
+  assert.deepEqual(out.map((s) => s.text), ['Head east on Warren Street', 'Turn left, then turn right onto Summit Street', 'You have arrived']);
+  assert.deepEqual(out[1].location, [40.74, -74.17]);
+});

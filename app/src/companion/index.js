@@ -130,6 +130,7 @@ export function startCompanion({ mock = isMock(), clock = realClock } = {}) {
     'speech.heard': (e) => brain.heard(e),
     'checkin.request': (e) => brain.checkinRequest(e),
     'alert.state': (e) => brain.alertState(e),
+    'nav.prompt': (e) => !onDispatchCall && brain.navPrompt(e.text),
     'dispatch.call': (e) => {
       onDispatchCall = ['connecting', 'ringing', 'connected'].includes(e.state);
       if (onDispatchCall && voice.speaking) voice.stop();

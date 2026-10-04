@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import { LocateFixed } from 'lucide-react';
+
+// Google Maps-style following: zoomed in on her as she walks; dragging the map pauses it and
+// shows a Recenter button.
+const FOLLOW_ZOOM = 17;
 
 // Tiles: Esri's dark gray canvas (free, no key). With no network the route, trail and markers
 // still draw on the dark background (mock mode with Wi-Fi off).
@@ -30,6 +35,9 @@ export default function MapCanvas({
   const trailCirclesRef = useRef([]);
   const homeMarkerRef = useRef(null);
   const [offlineTiles, setOfflineTiles] = useState(false);
+  const followingRef = useRef(true);
+  const fittedRef = useRef(false); // the whole-route overview is shown once, not after reroutes
+  const [showRecenter, setShowRecenter] = useState(false);
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -47,6 +55,10 @@ export default function MapCanvas({
     });
 
     mapInstanceRef.current = map;
+    map.on('dragstart', () => {
+      followingRef.current = false;
+      setShowRecenter(true);
+    });
 
     const dark = L.tileLayer(DARK_TILES, { maxZoom: 19, maxNativeZoom: 16, className: 'tiles-dark' });
     dark.on('tileerror', () => setOfflineTiles(true)); // offline: route, trail and markers still draw
@@ -97,12 +109,14 @@ export default function MapCanvas({
     }).addTo(map);
     routePolylineRef.current = line;
 
-    // Initial fit bounds
-    try {
-      const bounds = L.latLngBounds(latLngs);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
-    } catch (e) {
-      // Ignored
+    // Whole-route overview once at the start (not after a reroute: following takes over).
+    if (!fittedRef.current) {
+      fittedRef.current = true;
+      try {
+        map.fitBounds(L.latLngBounds(latLngs), { padding: [50, 50], maxZoom: 17 });
+      } catch (e) {
+        // Ignored
+      }
     }
   }, [route]);
 
@@ -200,9 +214,18 @@ export default function MapCanvas({
       fireflyMarkerRef.current = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
     }
 
-    // Smooth pan to keep user in centered view
-    map.panTo([lat, lng], { animate: true, duration: 1.0 });
+    // Follow her, zoomed in like turn-by-turn navigation (unless she dragged the map away).
+    if (currentPosition && followingRef.current) {
+      map.setView([lat, lng], Math.max(map.getZoom(), FOLLOW_ZOOM), { animate: true, duration: 1.0 });
+    }
   }, [currentPosition, isSpeaking, route]);
+
+  const recenter = () => {
+    const map = mapInstanceRef.current;
+    followingRef.current = true;
+    setShowRecenter(false);
+    if (map && currentPosition) map.setView([currentPosition.lat, currentPosition.lng], Math.max(map.getZoom(), FOLLOW_ZOOM), { animate: true });
+  };
 
   // Update Fading Trail
   useEffect(() => {
@@ -243,6 +266,13 @@ export default function MapCanvas({
         className="w-full h-full block"
         style={{ background: '#030a06' }}
       />
+
+      {showRecenter && (
+        <button type="button" onClick={recenter}
+          className="absolute right-4 top-[45%] z-20 flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-twilight-900/95 border border-gold-400/50 text-gold-200 text-xs font-bold shadow-xl active:scale-95">
+          <LocateFixed className="w-4 h-4" /> Recenter
+        </button>
+      )}
 
       {/* Enchanted Forest Vignette Overlay */}
       <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_80px_rgba(3,10,6,0.85)] z-10" />

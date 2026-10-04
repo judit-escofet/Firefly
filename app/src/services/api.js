@@ -60,6 +60,7 @@ export function normalizeWalk(w, fallbackDest) {
       eta_s: Math.round(w.route?.eta_s ?? w.eta_s ?? routeLength(points) / 1.3),
     },
     destination: w.destination ?? fallbackDest,
+    steps: w.steps ?? w.route?.steps ?? [], // turn-by-turn instructions
     started_at: Date.now(),
     offline: Boolean(w.offline),
   };
@@ -187,6 +188,19 @@ export const api = {
     } catch {
       return { ...local(), offline: true };
     }
+  },
+
+  // Plan again from where she is to the same destination ("Rerouting…").
+  // → {route: {points, distance_m, eta_s}, steps}
+  async reroute(walk, { lat, lng }) {
+    const dest = walk.destination;
+    if (walk.offline) {
+      const res = await fetch(`${BASE}/api/route?from=${lat},${lng}&to=${dest.lat},${dest.lng}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return { route: { points: data.points, distance_m: data.distance_m, eta_s: data.eta_s }, steps: data.steps ?? [] };
+    }
+    return postJson(`walks/${encodeURIComponent(walk.walk_id)}/reroute`, { lat, lng }, { timeoutMs: 10000 });
   },
 
   async endWalk(walk, reason) {

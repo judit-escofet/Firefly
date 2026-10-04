@@ -61,6 +61,7 @@ function walkJson(w, base) {
       distance_m: w.distance_m,
       eta_s: w.eta_s,
     },
+    steps: w.steps || [], // turn-by-turn: [{text, type, modifier, name, location: [lat, lng]}]
     started_at: w.started_at,
     ended_at: w.ended_at,
   };

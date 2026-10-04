@@ -6,6 +6,9 @@
 //          is dropped and her words are answered together once she pauses.
 //          After 90 s of quiet, casually bring something up (mode "idle"); each further silence
 //          waits twice as long (90 s, 3 min, 6 min…), reset as soon as she talks.
+// nav      turn-by-turn directions ("In 200 feet, turn left onto Summit Street") are spoken as
+//          soon as nobody is talking; if she keeps talking, after at most ~6 s (they're timely).
+//          The newest direction replaces an unspoken older one. Silent during an alert.
 // ETA      every 5 minutes the firefly says the time to home itself ("About 12 minutes to go,
 //          0.6 miles left."), at a quiet moment: never while she or the firefly is talking. The model
 //          doesn't bring up the time on its own (eta_due false); it only answers if she asks.
@@ -51,7 +54,10 @@ export function createBrain({
   let checkinReason = null;
   let inFlight = false;
   const history = []; // {speaker: 'user'|'firefly', text}
-  const timers = { turn: null, idle: null, checkin: null, calm: null, eta: null };
+  const timers = { turn: null, idle: null, checkin: null, calm: null, eta: null, nav: null };
+  let navText = null;
+  let navDeadline = 0;
+  const NAV_MAX_WAIT_MS = 6000;
   let etaPhrase = 0;
 
   const clear = (name) => {
@@ -69,6 +75,24 @@ export function createBrain({
   function armIdle() {
     if (!active || alertActive || awaitingAnswer) return clear('idle');
     set('idle', () => takeTurn({ idle: true }), Math.min(IDLE_MS * 2 ** idleStreak, IDLE_MAX_MS));
+  }
+
+  function navTick() {
+    if (!active || !navText) return clear('nav');
+    if (alertActive) {
+      navText = null;
+      return clear('nav');
+    }
+    const herTurn = clock.now() - lastHeardAt < 1500; // she's talking or just stopped
+    const late = clock.now() >= navDeadline;
+    if (!speaking && !inFlight && (!herTurn || (late && clock.now() - lastHeardAt > 600))) {
+      const text = navText;
+      navText = null;
+      clear('nav');
+      speak(text, clock.now()).then(() => armIdle(), () => {});
+      return;
+    }
+    set('nav', navTick, 500);
   }
 
   // The 5-minute time update, spoken without a model call.
@@ -248,6 +272,13 @@ export function createBrain({
         },
         CHECKIN_SILENCE_MS,
       );
+    },
+
+    navPrompt(text) {
+      if (!active || alertActive || !text) return;
+      navText = text; // a newer direction replaces one not yet spoken
+      navDeadline = clock.now() + NAV_MAX_WAIT_MS;
+      navTick();
     },
 
     alertState({ state }) {

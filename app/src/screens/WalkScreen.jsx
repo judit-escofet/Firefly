@@ -4,6 +4,7 @@ import { wakeLockService } from '../services/wakeLock';
 import MapCanvas from '../components/MapCanvas';
 import FireflyCompanion from '../components/FireflyCompanion';
 import DispatchCallPanel from '../components/DispatchCallPanel';
+import NavigationBanner from '../components/NavigationBanner';
 import { startDispatchCall, DEMO_DISPATCH_TEL } from '../services/dispatchCall';
 import { formatDistance } from '../services/units';
 import { PhoneCall, Clock, Navigation, X, Info } from 'lucide-react';
@@ -79,6 +80,7 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
 
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-col gap-2 max-w-md mx-auto">
         <DispatchCallPanel />
+        <NavigationBanner />
 
         {alerted && (
           <div className="p-3 rounded-2xl glass-mythic-card flex items-center gap-2.5 text-xs text-gold-200 animate-fade-in shadow-xl">
