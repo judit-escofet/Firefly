@@ -23,3 +23,6 @@ api/.data/
 .aws-sam/
 api/static/
 samconfig.toml
+
+# Local editor/assistant settings
+.claude/
