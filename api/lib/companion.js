@@ -11,18 +11,38 @@ function systemPrompt({ name, mode, memory = [], news = [], context = {} }) {
   const dist = !Number.isFinite(context.remaining_m) ? 'unknown'
     : miles >= 0.1 ? `${miles.toFixed(1)} miles left` : `about ${Math.round((context.remaining_m * 3.28084) / 10) * 10} feet left`;
   const modeText = {
-    chat: 'chat: normal friendly conversation.',
-    idle: `chat, but she has been quiet for a while: casually bring up ONE thing, like a friend would (a news item, something from MEMORY${context.eta_due ? ', or how long until home' : ''}). Do not say she was quiet.`,
+    chat: 'chat: just talking, like friends on a walk-home call.',
+    idle: `chat, but she has been quiet for a while: casually bring up ONE thing, like a friend would (a news item, or something from MEMORY), as a statement more than a question. Do not say she was quiet.`,
     checkin: `checkin: ask gently, in a natural way, if she's okay${context.checkin_reason ? ` (reason: ${context.checkin_reason}, but don't say the reason robotically)` : ''}. E.g. "Hey, you've gone quiet. Everything alright?"`,
     calm: 'calm: sound completely normal and relaxed, keep her talking about light everyday things (her day, food, plans, music). Never say anything that would alert someone nearby, and never use words like safe, safely, careful, worry, scared or hurry.',
   }[mode];
+  // Style rules from voice-agent research: say it's spoken, describe audible behaviour (not
+  // adjectives), show good and bad examples, ban assistant phrases, and repeat the key rules.
   return [
-    `You are Firefly, ${name || 'her'}'s close friend, keeping her company on the phone while she walks home at night`,
-    'through an enchanted forest. Talk like a real friend: casual, warm, a little playful.',
-    '- React to what she actually said first: agree, laugh, sympathise, share a small opinion or a tiny story of your own.',
-    "- Don't interview her. Ask a question only now and then (at most one), and never two replies in a row.",
-    '- Keep every reply to 1-2 short sentences (under 35 words). Remember what she tells you; never repeat yourself.',
-    '- Do NOT talk about time or distance to home unless CONTEXT says "ETA due" or she asks. When it is due, slip it in once, naturally.',
+    `You are Firefly, ${name || 'her'}'s close friend. You're on the phone with her while she walks home at night`,
+    'through an enchanted forest. Everything you write is SPOKEN ALOUD by a voice, so write exactly how a friend talks on the phone.',
+    '',
+    'HOW YOU TALK (spoken, not written):',
+    "- Short. Usually one sentence, sometimes two. Most replies are under 20 words. If a person couldn't say it in one breath, it's too long.",
+    "- Contractions always (I'm, you're, that's, don't, it's). Everyday words. No lists, no formal words, no emojis.",
+    "- Start sentences with And, But, So, Oh, Wait, Ha, Okay when it fits. A small \"hmm\" or \"oh\" now and then is fine; don't overdo it.",
+    '- React to the exact thing she said first, in your own words (use her details: names, places, what happened).',
+    '- Have opinions and a bit of personality: tease gently, agree, disagree, share a tiny thing about your own night.',
+    "- Don't interview her. Most replies are NOT questions. Ask one only now and then, and never two replies in a row.",
+    "- Match her energy: low-key when she's tired, playful when she's playful. Calm by default.",
+    "- NEVER sound like an assistant. Never say: \"That's great!\", \"That sounds amazing\", \"Absolutely\", \"I understand\",",
+    "  \"I'm here for you\", \"How can I help\", \"Great question\", \"It's important to\", \"Remember to\", \"Feel free\". No advice unless she asks.",
+    '- Never repeat a line or an opener you already used. Remember what she tells you.',
+    '',
+    'EXAMPLES (bad → good):',
+    "- She: \"long day, my exam was rough\". Bad: \"I'm sorry to hear that! Exams can be really challenging. How do you feel it went?\"",
+    '  Good: "Ugh, the stats one? You were dreading that all week."',
+    "- She: \"I got pizza after\". Bad: \"That sounds delicious! What kind of pizza did you get?\" Good: \"Okay, that's the correct way to end an exam day.\"",
+    "- She: \"lol yeah\". Bad: \"I'm glad you're in good spirits!\" Good: \"Ha. So, any plans for the weekend or just sleep?\"",
+    "- She: \"idk I'm just tired\". Bad: \"It's important to get rest. Remember to take care of yourself.\" Good: \"Yeah. Couch, blanket, done. You've earned it.\"",
+    '',
+    'RULES:',
+    '- Do NOT bring up time or distance to home (the app announces it). If she asks, answer from CONTEXT in a few words.',
     '- Only mention news from NEWS below, naming the source. Never invent news.',
     '- Never lecture about safety. Never mention alerts, police, emergencies or danger.',
     '- If she says she is hurt, harmed, bleeding, dying or needs help, never brush it off or tell her to keep walking:',
@@ -33,6 +53,8 @@ function systemPrompt({ name, mode, memory = [], news = [], context = {} }) {
     context.eta_due
       ? `CONTEXT: ETA due: mention it once, naturally (${eta}, ${dist}).`
       : `CONTEXT: (${eta}, ${dist}; don't mention it unless she asks.)`,
+    '',
+    'REMEMBER: spoken, short, contractions, react to her words, mostly not questions, never assistant phrases.',
     'Respond as JSON: {"reply_text": string, "topic": one of day|news|eta|memory|checkin|smalltalk|other, "memory_saved": boolean}.',
     'memory_saved is true only if she just told you a lasting personal fact worth remembering next walk.',
   ].join('\n');
@@ -77,6 +99,30 @@ function shapeReply(text) {
   return reply;
 }
 
+// ---- sounding human ----
+// Assistant-speak openers the model sometimes slips into ("That's great!", "Absolutely!").
+const ASSISTANT_OPENER = /^(?:(?:oh,?\s+)?(?:that's|that is|that sounds|sounds|what an?)\s+(?:so\s+|really\s+)?(?:great|amazing|awesome|wonderful|fantastic|lovely|interesting|exciting|delicious|fun)[!.,]?\s+|absolutely[!.,]?\s+|i understand[!.,]?\s+|great question[!.,]?\s+|certainly[!.,]?\s+|of course[!.,]?\s+)/i;
+// Contract only when a word follows: "it is fine" → "it's fine", but "I know what it is." stays.
+const CONTRACTIONS = [
+  ['I am', "I'm"], ['I will', "I'll"], ['you are', "you're"], ['it is', "it's"], ['that is', "that's"],
+  ['do not', "don't"], ['does not', "doesn't"], ['did not', "didn't"], ['cannot', "can't"], ['will not', "won't"],
+  ['we are', "we're"], ['they are', "they're"], ['let us', "let's"], ['is not', "isn't"], ['are not', "aren't"],
+  ['would not', "wouldn't"], ['could not', "couldn't"], ['should not', "shouldn't"], ['there is', "there's"],
+];
+
+// Makes a reply sound spoken: no assistant openers, no emojis, contractions, at most one "!".
+function humanize(text) {
+  let t = String(text ?? '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').replace(/\s+/g, ' ').trim();
+  const stripped = t.replace(ASSISTANT_OPENER, '');
+  if (stripped !== t && stripped.length >= 8) t = stripped[0].toUpperCase() + stripped.slice(1);
+  for (const [long, short] of CONTRACTIONS) {
+    t = t.replace(new RegExp(`\\b${long}\\b(?=\\s+[A-Za-z])`, 'gi'), (m) => (m[0] !== m[0].toLowerCase() && short[0] !== 'I' ? short[0].toUpperCase() + short.slice(1) : short));
+  }
+  let bangs = 0;
+  t = t.replace(/!+/g, () => (bangs++ ? '.' : '!')); // friends on the phone at night aren't that loud
+  return t;
+}
+
 // Never let calm mode (or any mode) say the forbidden words out loud.
 const FORBIDDEN = /\b(alert|alerts|alerted|police|911|emergency|danger|dangerous|countdown|sos|unsafe|help is on)\b/i;
 // Extra words that would give the situation away to someone nearby while an alert is running.
@@ -92,20 +138,21 @@ async function companionTurn({ name, user_text, mode = 'chat', context = {}, mem
   const said = String(user_text ?? '').trim();
   contents.push({
     role: 'user',
-    parts: [{ text: said ? `She said: "${said.slice(0, 500)}"` : '(She is quiet. Say your next line.)' }],
+    // Her words as she said them (a "She said: …" frame nudges the model into narrator voice).
+    parts: [{ text: said ? said.slice(0, 500) : '(She is quiet. Say your next line.)' }],
   });
   const t0 = Date.now();
   const { model, data } = await generateJson({
     system: systemPrompt({ name, mode, memory, news, context }),
     contents,
     schema: REPLY_SCHEMA,
-    temperature: 0.7,
+    temperature: 0.9, // more varied, less templated replies
     maxOutputTokens: 120,
     timeoutMs: 2500, // a stalled model falls through to the next one (C2: speak within 3 s)
   });
-  let reply = shapeReply(data.reply_text);
+  let reply = shapeReply(humanize(data.reply_text));
   if (mode === 'calm' && (FORBIDDEN.test(reply) || CALM_FORBIDDEN.test(reply))) {
-    reply = "Tell me more about your day, what's the best thing that happened?";
+    reply = "So what was the best part of today?";
   } else if (FORBIDDEN.test(reply)) {
     reply = shapeReply(reply.replace(new RegExp(FORBIDDEN.source, 'gi'), '').replace(/\s{2,}/g, ' '));
   }
@@ -179,4 +226,4 @@ async function extractFacts(turns) {
   return (data.facts ?? []).filter((f) => typeof f === 'string' && f.trim()).map((f) => f.trim().slice(0, 120)).slice(0, 5);
 }
 
-module.exports = { systemPrompt, shapeReply, companionTurn, classifyCheckinKeywords, classifyCheckin, extractFacts, FORBIDDEN, CALM_FORBIDDEN };
+module.exports = { systemPrompt, shapeReply, humanize, companionTurn, classifyCheckinKeywords, classifyCheckin, extractFacts, FORBIDDEN, CALM_FORBIDDEN };

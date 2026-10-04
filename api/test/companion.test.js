@@ -1,7 +1,7 @@
 // P1 companion: reply shaping (C3), check-in keyword rules (C9), calm-mode filters (C10), RSS parsing.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { shapeReply, classifyCheckinKeywords, FORBIDDEN, CALM_FORBIDDEN, systemPrompt } = require('../lib/companion');
+const { shapeReply, classifyCheckinKeywords, FORBIDDEN, CALM_FORBIDDEN, systemPrompt, humanize } = require('../lib/companion');
 const { parseRss } = require('../lib/news');
 
 const words = (s) => s.split(/\s+/).filter(Boolean).length;
@@ -57,4 +57,22 @@ test('RSS parsing: title without source suffix, source, link, date', () => {
   assert.deepEqual([items[0].title, items[0].source, items[0].url], ['Big Chip News', 'The Verge', 'https://news.google.com/a']);
   assert.equal(items[0].published, '2026-10-03T12:00:00.000Z');
   assert.equal(items[1].title, 'Album & Tour');
+});
+
+test('humanize: drops assistant openers and emojis, uses contractions, keeps sentence ends intact', () => {
+  assert.equal(humanize("That's great! I am so proud of you!!"), "I'm so proud of you!");
+  assert.equal(humanize('Absolutely! You are going to do fine 😊'), "You're going to do fine");
+  assert.equal(humanize('Oh that sounds amazing! So it is your birthday soon?'), "So it's your birthday soon?");
+  assert.equal(humanize('I do not think it is too late.'), "I don't think it's too late.");
+  assert.equal(humanize('I know what it is.'), 'I know what it is.'); // no contraction at the end of a clause
+  assert.equal(humanize('Ugh, the stats one? You were dreading that all week.'), 'Ugh, the stats one? You were dreading that all week.');
+  assert.equal(humanize('Wow! Nice! Cool!'), 'Wow! Nice. Cool.'); // at most one "!"
+});
+
+test('the prompt says replies are spoken and shows good vs bad examples', () => {
+  const p = systemPrompt({ name: 'Priya', mode: 'chat', context: {} });
+  assert.match(p, /SPOKEN ALOUD/);
+  assert.match(p, /Contractions always/);
+  assert.match(p, /EXAMPLES \(bad → good\)/);
+  assert.match(p, /Never say: "That's great!"/);
 });

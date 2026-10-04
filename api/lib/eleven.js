@@ -18,7 +18,9 @@ async function speak(text, { timeoutMs = 8000 } = {}) {
       body: JSON.stringify({
         text,
         model_id: MODEL,
-        voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.2, use_speaker_boost: true },
+        // Lower stability = more natural emotional range (ElevenLabs suggests ~0.45 for conversational
+        // agents); a touch more style so it sounds like a friend, not a narrator.
+        voice_settings: { stability: 0.42, similarity_boost: 0.75, style: 0.3, use_speaker_boost: true, speed: 1.0 },
       }),
     });
     if (!res.ok) {

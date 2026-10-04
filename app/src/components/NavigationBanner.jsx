@@ -27,37 +27,40 @@ function TurnIcon({ type, modifier, className }) {
   }
 }
 
-export default function NavigationBanner() {
+// One floating box: the next turn (when there are directions) on top, and `children` (ETA, distance
+// left, listening) as the strip underneath.
+export default function NavigationBanner({ children }) {
   const [nav, setNav] = useState(null);
   useEffect(() => bus.on('nav.update', (e) => setNav((prev) => (e.rerouting && !e.distance_m && prev ? { ...prev, rerouting: true } : e))), []);
 
-  if (!nav || nav.done) return null;
-  const dist = Number.isFinite(nav.distance_m) ? formatDistance(nav.distance_m) : null;
+  const showTurn = nav && !nav.done;
+  const dist = showTurn && Number.isFinite(nav.distance_m) ? formatDistance(nav.distance_m) : null;
 
   return (
-    <div className="rounded-3xl overflow-hidden shadow-2xl border border-emerald-300/30" role="status" aria-live="polite" aria-label="Next direction">
-      <div className="flex items-center gap-3 px-4 py-3 bg-emerald-800/95 text-white">
-        <div className="w-12 h-12 shrink-0 rounded-2xl bg-emerald-950/40 flex items-center justify-center">
-          {nav.rerouting ? <Loader2 className="w-7 h-7 animate-spin" /> : <TurnIcon type={nav.type} modifier={nav.modifier} className="w-8 h-8 stroke-[2.5]" />}
+    <div className="rounded-3xl overflow-hidden shadow-2xl border border-white/15 glass-mythic-card" role="status" aria-live="polite" aria-label="Next direction">
+      {showTurn && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-emerald-800/95 text-white">
+          <div className="w-12 h-12 shrink-0 rounded-2xl bg-emerald-950/40 flex items-center justify-center">
+            {nav.rerouting ? <Loader2 className="w-7 h-7 animate-spin" /> : <TurnIcon type={nav.type} modifier={nav.modifier} className="w-8 h-8 stroke-[2.5]" />}
+          </div>
+          <div className="min-w-0 flex-1">
+            {nav.rerouting ? (
+              <div className="text-lg font-bold">Rerouting…</div>
+            ) : (
+              <>
+                {dist && (
+                  <div className="text-2xl font-extrabold leading-none tracking-tight">
+                    {dist.value} <span className="text-base font-semibold">{dist.unit}</span>
+                  </div>
+                )}
+                <div className="text-sm font-semibold leading-snug mt-0.5 truncate">{nav.text}</div>
+              </>
+            )}
+            {nav.then && !nav.rerouting && <div className="text-[11px] text-emerald-100/90 truncate mt-0.5">{nav.then}</div>}
+          </div>
         </div>
-        <div className="min-w-0">
-          {nav.rerouting ? (
-            <div className="text-lg font-bold">Rerouting…</div>
-          ) : (
-            <>
-              {dist && (
-                <div className="text-2xl font-extrabold leading-none tracking-tight">
-                  {dist.value} <span className="text-base font-semibold">{dist.unit}</span>
-                </div>
-              )}
-              <div className="text-sm font-semibold leading-snug mt-0.5 truncate">{nav.text}</div>
-            </>
-          )}
-        </div>
-      </div>
-      {nav.then && !nav.rerouting && (
-        <div className="px-4 py-1.5 bg-emerald-950/90 text-emerald-100 text-xs font-medium truncate">{nav.then}</div>
       )}
+      {children && <div className="px-4 py-2.5">{children}</div>}
     </div>
   );
 }

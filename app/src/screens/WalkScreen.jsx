@@ -80,7 +80,6 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
 
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-col gap-2 max-w-md mx-auto">
         <DispatchCallPanel />
-        <NavigationBanner />
 
         {alerted && (
           <div className="p-3 rounded-2xl glass-mythic-card flex items-center gap-2.5 text-xs text-gold-200 animate-fade-in shadow-xl">
@@ -96,7 +95,9 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
           </div>
         )}
 
-        <div className="p-4 rounded-3xl glass-mythic-card flex items-center justify-between shadow-2xl">
+        {/* One floating box: next turn on top, ETA / distance left / listening underneath. */}
+        <NavigationBanner>
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
               <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-pastel-lavender font-bold">
@@ -127,6 +128,7 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
             {heard && <span className="text-[10px] text-pastel-mint mt-1 max-w-[9rem] truncate italic">“{heard}”</span>}
           </div>
         </div>
+        </NavigationBanner>
       </div>
 
       <div className="absolute right-4 bottom-32 z-20 flex flex-col items-end max-w-[85vw]">
