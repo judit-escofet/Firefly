@@ -49,7 +49,7 @@ The app's modules never call each other directly. They publish and subscribe to 
 | `deploy-aws.ps1`, `deploy-workshop.ps1`, `deploy.ps1`, `template.yaml` | Other ways to deploy (Windows wrapper, sandbox, full SAM stack) |
 | `presentation/` | The looping pitch video (`slides.html` → `render.py` → `firefly-loop.mp4`) |
 | [`docs/architecture.svg`](docs/architecture.svg) | Architecture diagram for judges (PNG: `docs/architecture.png`) |
-| `firefly-architecture.drawio` | Older, more detailed diagram from the Azure plan (out of date) |
+| `firefly-architecture.drawio` | The same diagram, editable in draw.io / diagrams.net |
 
 ## Quick start
 
