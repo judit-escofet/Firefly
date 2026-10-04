@@ -50,6 +50,8 @@ The app's modules never call each other directly. They publish and subscribe to 
 | `presentation/` | The looping pitch video (`slides.html` → `render.py` → `firefly-loop.mp4`) |
 | [`docs/architecture.svg`](docs/architecture.svg) | Architecture diagram for judges (PNG: `docs/architecture.png`) |
 | `firefly-architecture.drawio` | The same diagram, editable in draw.io / diagrams.net |
+| [`docs/firefly-architecture-detailed.drawio`](docs/firefly-architecture-detailed.drawio) | Detailed engineering view, 2 pages: every module, API route and service (with logos); Guardian detection paths and state machine |
+| `docs/archive/firefly-architecture-original.drawio` | The first diagram, from the Azure plan (kept for history) |
 
 ## Quick start
 
