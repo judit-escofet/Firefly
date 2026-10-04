@@ -12,6 +12,7 @@
 import * as bus from '../bus.js';
 import { realClock } from '../guardian/clock.js';
 import { acquireMic } from '../audio/micHub.js';
+import { cleanTranscript, isMeaningful } from './noiseFilter.js';
 import { createCompanionApi } from './api.js';
 import { createVoice } from './voice.js';
 import { createBrain } from './brain.js';
@@ -101,7 +102,10 @@ export function startCompanion({ mock = isMock(), clock = realClock } = {}) {
   // Her words → speech.heard (the Guardian's code-phrase spotter and the brain both listen).
   // The firefly's own voice coming back through the speaker is dropped; if she talks over the
   // firefly, it stops talking so she can be heard (barge-in).
-  function heard(text, final) {
+  function heard(raw, final) {
+    // Background noise, filler and stray single words don't count (and don't interrupt it).
+    const text = cleanTranscript(raw);
+    if (!isMeaningful(text, { final })) return;
     const fireflyTalking = voice.speaking || Date.now() < lastSpoken.until;
     if (fireflyTalking && isEcho(text, lastSpoken.text)) return;
     if (voice.speaking) voice.stop();

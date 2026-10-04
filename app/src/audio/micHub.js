@@ -45,12 +45,13 @@ export function acquireMic({ file = null } = {}) {
 }
 
 // Audio constraints. Desktop/Android: raw audio, because noise suppression / AGC flatten exactly
-// the screams the Guardian listens for. iOS: echo cancellation on (see the note at the top);
-// speech-to-text adds its own gain either way (companion/stt.js).
+// the screams the Guardian listens for. iOS: echo cancellation + noise suppression on (the
+// voice-processing path; see the note at the top). Either way speech-to-text adds its own voice
+// gate and gain (companion/stt.js).
 export function micConstraints(ios = isIOS()) {
   return {
     audio: ios
-      ? { echoCancellation: true, noiseSuppression: false, autoGainControl: false }
+      ? { echoCancellation: true, noiseSuppression: true, autoGainControl: false }
       : { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
   };
 }

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createBrain, TURN_SILENCE_MS, IDLE_MS, CHECKIN_SILENCE_MS, NEWS_GAP_MS, ETA_GAP_MS } from '../src/companion/brain.js';
 import { classifyCheckinKeywords } from '../src/companion/checkinWords.js';
-import { parseServerMessage, pcm16Base64, createSpeechGain } from '../src/companion/stt.js';
+import { parseServerMessage, pcm16Base64, createSpeechGain, createVoiceGate } from '../src/companion/stt.js';
+import { cleanTranscript, isMeaningful } from '../src/companion/noiseFilter.js';
 import { createFakeClock } from '../src/guardian/clock.js';
 
 // setImmediate, not setTimeout(0): Windows timers are ~15 ms coarse, which made the long
@@ -281,12 +282,20 @@ describe('speech gain for transcription (quiet iPhone mics)', () => {
   const tone = (amp, n = 1600) => Float32Array.from({ length: n }, (_, i) => amp * Math.sin(i / 5));
   const peak = (x) => x.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
 
-  it('brings quiet speech up, but no more than 12x', () => {
+  it('brings quiet speech up, but no more than 6x', () => {
     const g = createSpeechGain();
     let out;
     for (let i = 0; i < 60; i++) out = g(tone(0.01));
-    expect(peak(out)).toBeGreaterThan(0.1);
-    expect(peak(out)).toBeLessThanOrEqual(0.121);
+    expect(peak(out)).toBeGreaterThan(0.05);
+    expect(peak(out)).toBeLessThanOrEqual(0.061);
+  });
+
+  it('is driven by her voice only: background noise never raises the gain', () => {
+    const g = createSpeechGain();
+    for (let i = 0; i < 30; i++) g(tone(0.3), true); // she talked at a normal level
+    let out;
+    for (let i = 0; i < 60; i++) out = g(tone(0.005), false); // then only background
+    expect(peak(out)).toBeLessThan(0.01);
   });
 
   it('leaves loud speech alone and never clips past full scale', () => {
@@ -297,5 +306,65 @@ describe('speech gain for transcription (quiet iPhone mics)', () => {
     const q = createSpeechGain();
     for (let i = 0; i < 60; i++) q(tone(0.01));
     expect(peak(q(tone(0.9)))).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('voice gate: only her voice reaches transcription', () => {
+  // Deterministic pseudo-noise (wind, traffic hum) and a voiced "speech" signal in the voice band.
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
+  const noise = (amp, n = 1600) => Float32Array.from({ length: n }, () => amp * rnd());
+  const voice = (amp, n = 1600, f = 220) => Float32Array.from({ length: n }, (_, i) => amp * (Math.sin((2 * Math.PI * f * i) / 16000) + 0.5 * Math.sin((2 * Math.PI * 3 * f * i) / 16000)));
+  const mix = (a, b) => a.map((v, i) => v + b[i]);
+  const energy = (x) => Math.sqrt(x.reduce((s, v) => s + v * v, 0) / x.length);
+
+  it('stays closed on steady background noise (sends silence)', () => {
+    const gate = createVoiceGate();
+    let opened = 0;
+    for (let i = 0; i < 100; i++) {
+      const r = gate(noise(0.02));
+      if (i > 20 && r.voice) opened++;
+    }
+    expect(opened).toBe(0);
+  });
+
+  it('opens for her voice close to the phone, including the chunk before her first word', () => {
+    const gate = createVoiceGate();
+    for (let i = 0; i < 40; i++) gate(noise(0.01));
+    const onset = mix(noise(0.01), voice(0.2));
+    const r1 = gate(onset); // decision looks one chunk ahead…
+    expect(r1.voice).toBe(true); // …so the chunk just before her first word is sent too
+    const r2 = gate(mix(noise(0.01), voice(0.2)));
+    expect(r2.voice).toBe(true);
+    expect(energy(r2.out)).toBeGreaterThan(0.1); // and the word itself goes out
+  });
+
+  it('ignores faint far-away voices but keeps short pauses inside her sentence', () => {
+    const gate = createVoiceGate();
+    for (let i = 0; i < 40; i++) gate(noise(0.01));
+    let farOpen = 0;
+    for (let i = 0; i < 30; i++) if (gate(mix(noise(0.01), voice(0.008))).voice) farOpen++;
+    expect(farOpen).toBe(0); // someone across the street
+    for (let i = 0; i < 5; i++) gate(mix(noise(0.01), voice(0.2)));
+    const pause = [1, 2, 3].map(() => gate(noise(0.01)).voice); // a 300 ms breath
+    expect(pause.every(Boolean)).toBe(true);
+  });
+});
+
+describe('noise transcripts are ignored', () => {
+  it('drops tags, filler and stray single words', () => {
+    expect(isMeaningful('[noise]')).toBe(false);
+    expect(isMeaningful('<music> ♪')).toBe(false);
+    expect(isMeaningful('um hmm')).toBe(false);
+    expect(isMeaningful('the')).toBe(false);
+    expect(isMeaningful('banana')).toBe(false);
+  });
+  it('keeps real sentences and one-word answers', () => {
+    expect(isMeaningful('i think i left the oven on')).toBe(true);
+    expect(isMeaningful('yeah')).toBe(true);
+    expect(isMeaningful('No.')).toBe(true);
+    expect(isMeaningful('help')).toBe(true);
+    expect(isMeaningful('yeah', { final: false })).toBe(false); // partial: wait for more
+    expect(cleanTranscript('[noise] long day (laughs)')).toBe('long day');
   });
 });

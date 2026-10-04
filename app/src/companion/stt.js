@@ -15,20 +15,76 @@
 const CHUNK = 1600; // 100 ms at 16 kHz
 const SESSION_MS = 8 * 60e3;
 
-// Phones capture with automatic gain control OFF (the Guardian needs raw levels to hear screams),
-// and iPhones in particular then deliver very quiet audio. Speech-to-text gets its own gentle
-// automatic gain: bring her speech up to a steady level, never amplify more than 12x, and never
-// clip. Only the copy sent for transcription is changed.
-export function createSpeechGain({ target = 0.35, maxGain = 12 } = {}) {
-  let peak = 0.02; // slowly decaying recent peak of her speech
-  let gain = 1;
-  return function apply(chunk) {
-    let max = 0;
+// --- Only her voice goes to transcription -------------------------------------------------
+// The mic hears everything: traffic, wind, people across the street. Before audio is sent to
+// speech-to-text it goes through a voice gate: a band-pass to the voice range, a tracked noise
+// floor, and "open" only when the sound is clearly louder than the background (her voice close to
+// the phone), with a short hang time so words aren't chopped. Closed = silence is sent. The
+// Guardian's scream model is NOT gated; it always hears the raw mic.
+
+function biquad(type, freq, rate, q = Math.SQRT1_2) {
+  const w = (2 * Math.PI * freq) / rate;
+  const a = Math.sin(w) / (2 * q);
+  const c = Math.cos(w);
+  const [b0, b1, b2] = type === 'highpass' ? [(1 + c) / 2, -(1 + c), (1 + c) / 2] : [(1 - c) / 2, 1 - c, (1 - c) / 2];
+  const a0 = 1 + a;
+  const k = { b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: (-2 * c) / a0, a2: (1 - a) / a0 };
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  return (x) => {
+    const y = k.b0 * x + k.b1 * x1 + k.b2 * x2 - k.a1 * y1 - k.a2 * y2;
+    x2 = x1; x1 = x; y2 = y1; y1 = y;
+    return y;
+  };
+}
+
+// gate(chunk) → { out, voice }. Output is delayed by one chunk (100 ms) so the decision can look
+// ahead: the chunk just before her first word is sent too, and her first syllable isn't lost.
+export function createVoiceGate({ rate = 16000, openRatio = 3, minLevel = 0.003, hangChunks = 7, windowChunks = 30 } = {}) {
+  const hp = biquad('highpass', 150, rate);
+  const lp = biquad('lowpass', 3800, rate);
+  // Background level = the quietest 100 ms of the last ~3 s ("minimum statistics"). Even while
+  // she talks there are gaps between words, so this follows the real background, and a noisy
+  // start can't trick it into staying open.
+  const history = [];
+  let hang = 0;
+  let prev = null;
+  let prevVoice = false;
+  return function gate(chunk) {
+    let sum = 0;
     for (let i = 0; i < chunk.length; i++) {
-      const v = Math.abs(chunk[i]);
-      if (v > max) max = v;
+      const v = lp(hp(chunk[i]));
+      sum += v * v;
     }
-    peak = Math.max(max, peak * 0.985); // ~7 s to fall to a third
+    const e = Math.sqrt(sum / chunk.length);
+    history.push(e);
+    if (history.length > windowChunks) history.shift();
+    const floor = Math.max(Math.min(...history), 1e-4);
+    const voice = history.length >= 3 && e > Math.max(floor * openRatio, minLevel);
+    const open = voice || prevVoice || hang > 0;
+    hang = voice ? hangChunks : Math.max(0, hang - 1);
+    const out = prev && open ? prev : new Float32Array(chunk.length);
+    const wasVoice = open && !!prev;
+    prev = chunk;
+    prevVoice = voice;
+    return { out, voice: wasVoice, level: e, floor };
+  };
+}
+
+// Phones capture with automatic gain control off (the Guardian needs raw levels to hear screams),
+// and iPhones then deliver quiet audio. Speech-to-text gets its own gentle gain, driven only by
+// her voice (never by background noise), at most 6x, never clipping.
+export function createSpeechGain({ target = 0.35, maxGain = 6 } = {}) {
+  let peak = 0.05; // slowly decaying peak of her speech
+  let gain = 1;
+  return function apply(chunk, isVoice = true) {
+    if (isVoice) {
+      let max = 0;
+      for (let i = 0; i < chunk.length; i++) {
+        const v = Math.abs(chunk[i]);
+        if (v > max) max = v;
+      }
+      peak = Math.max(max, peak * 0.985);
+    }
     const want = Math.min(maxGain, Math.max(1, target / Math.max(peak, 1e-4)));
     gain += (want - gain) * (want < gain ? 0.5 : 0.1); // drop fast on loud sounds, rise slowly
     if (gain === 1) return chunk;
@@ -80,6 +136,7 @@ export function createTranscriber({
   let midUtterance = false;
   let retry = 0;
   let reconnectTimer = null;
+  const voiceGate = createVoiceGate();
   const speechGain = createSpeechGain();
 
   async function connect() {
@@ -151,8 +208,9 @@ export function createTranscriber({
   }
 
   function sendChunk(chunk) {
+    const { out, voice } = voiceGate(chunk); // always runs, so it learns the background first
     if (!ready || ws?.readyState !== 1) return;
-    ws.send(JSON.stringify({ realtimeInput: { audio: { data: pcm16Base64(speechGain(chunk)), mimeType: 'audio/pcm;rate=16000' } } }));
+    ws.send(JSON.stringify({ realtimeInput: { audio: { data: pcm16Base64(voice ? speechGain(out, true) : out), mimeType: 'audio/pcm;rate=16000' } } }));
     // Rotate before the 10-minute session limit, but not in the middle of a sentence.
     if (Date.now() - sessionStart > SESSION_MS && !midUtterance && !reconnectTimer) {
       sessionStart = Date.now(); // don't re-trigger while the new one connects
