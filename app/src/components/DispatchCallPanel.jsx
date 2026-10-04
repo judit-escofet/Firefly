@@ -43,7 +43,7 @@ export default function DispatchCallPanel() {
           </div>
           <div>
             <div className="font-bold text-base leading-tight">Emergency call</div>
-            <div className="text-[13px] text-lichen-300">Demo 911 · {call.display}</div>
+            <div className="text-[0.8125rem] text-lichen-300">Demo 911 · {call.display}</div>
           </div>
         </div>
         {!live && (
@@ -53,19 +53,19 @@ export default function DispatchCallPanel() {
         )}
       </div>
 
-      <div className="mt-3 text-[15px] font-bold" data-testid="dispatch-status">
+      <div className="mt-3 text-[0.9375rem] font-bold" data-testid="dispatch-status">
         {call.mode === 'mock' && live ? `${status} (simulated)` : status}
       </div>
 
       {live && (
         <div className="mt-3 flex gap-3">
           <button onClick={toggleDispatchMute}
-            className="btn-quiet flex-1 h-12 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2">
+            className="btn-quiet flex-1 h-12 rounded-xl font-bold text-[0.9375rem] flex items-center justify-center gap-2">
             {call.muted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             {call.muted ? 'Unmute' : 'Mute'}
           </button>
           <button onClick={hangUpDispatchCall}
-            className="flex-1 h-12 rounded-xl bg-ember-500 text-white font-bold text-[15px] flex items-center justify-center gap-2 shadow-press">
+            className="flex-1 h-12 rounded-xl bg-ember-500 text-white font-bold text-[0.9375rem] flex items-center justify-center gap-2 shadow-press">
             <PhoneOff className="w-4 h-4" /> Hang up
           </button>
         </div>
@@ -73,12 +73,12 @@ export default function DispatchCallPanel() {
 
       {(call.state === 'failed' || call.state === 'automated') && (
         <a href={`tel:${call.tel}`}
-          className="mt-3 w-full h-12 rounded-xl bg-ember-500 text-white font-bold text-[15px] flex items-center justify-center gap-2 shadow-press">
+          className="mt-3 w-full h-12 rounded-xl bg-ember-500 text-white font-bold text-[0.9375rem] flex items-center justify-center gap-2 shadow-press">
           <PhoneCall className="w-4 h-4" /> Call {call.display} from your phone
         </a>
       )}
 
-      <p className="mt-3 text-[12px] leading-snug text-lichen-400">
+      <p className="mt-3 text-[0.75rem] leading-snug text-lichen-400">
         <strong className="text-lichen-200">Demo:</strong> this calls a demo number standing in for 911. In the full
         product, a monitoring service would contact dispatch.
       </p>

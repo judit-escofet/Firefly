@@ -1,3 +1,5 @@
+import plugin from 'tailwindcss/plugin';
+
 /** @type {import('tailwindcss').Config} */
 // Firefly palette: a grove at night. Moss-dark greens for everything, parchment for text, and one
 // warm lantern colour that belongs to the firefly (glow, the main button, the route). No purple,
@@ -89,5 +91,12 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Very short screens (small phones, phones held sideways): tighter layouts instead of scrolling.
+    plugin(({ addVariant }) => {
+      addVariant('short', '@media (max-height: 640px)');
+      addVariant('tiny', '@media (max-height: 520px)');
+      addVariant('land', '@media (orientation: landscape) and (max-height: 520px)');
+    }),
+  ],
 };

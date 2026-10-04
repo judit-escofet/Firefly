@@ -57,7 +57,7 @@ export default function DemoControls({ activeScreen, canWalk, onWalkWithTestAudi
         {icon}
         <span>{children}</span>
       </span>
-      {kbd && <kbd className="px-1.5 py-0.5 rounded bg-grove-950 text-[10px] font-mono text-sage-300">{kbd}</kbd>}
+      {kbd && <kbd className="px-1.5 py-0.5 rounded bg-grove-950 text-[0.625rem] font-mono text-sage-300">{kbd}</kbd>}
     </button>
   );
 
@@ -99,21 +99,21 @@ export default function DemoControls({ activeScreen, canWalk, onWalkWithTestAudi
                 setMockMode(!isMock);
                 window.location.reload();
               }}
-              className={`px-3 py-1 rounded-full font-bold text-[11px] transition-all ${isMock ? 'bg-firefly-400 text-grove-950' : 'bg-grove-800 text-sage-300'}`}
+              className={`px-3 py-1 rounded-full font-bold text-[0.6875rem] transition-all ${isMock ? 'bg-firefly-400 text-grove-950' : 'bg-grove-800 text-sage-300'}`}
             >
               {isMock ? 'On' : 'Off'}
             </button>
           </div>
 
           <div className="space-y-1.5">
-            <div className="text-[10px] text-sage-400 font-semibold uppercase tracking-wider">Start</div>
+            <div className="text-[0.625rem] text-sage-400 font-semibold uppercase tracking-wider">Start</div>
             <Btn onClick={onWalkWithTestAudio} disabled={!canWalk} icon={<AudioLines className="w-3.5 h-3.5 text-firefly-400" />}>
               Walk with test audio (no mic)
             </Btn>
           </div>
 
           <div className="space-y-1.5">
-            <div className="text-[10px] text-sage-400 font-semibold uppercase tracking-wider">During the walk {sim.mock ? '' : '(simulated walk only)'}</div>
+            <div className="text-[0.625rem] text-sage-400 font-semibold uppercase tracking-wider">During the walk {sim.mock ? '' : '(simulated walk only)'}</div>
             <Btn onClick={() => locationService.jumpAhead()} disabled={!sim.mock} kbd="J" icon={<FastForward className="w-3.5 h-3.5 text-firefly-400" />}>
               Jump ahead
             </Btn>
@@ -152,7 +152,7 @@ export default function DemoControls({ activeScreen, canWalk, onWalkWithTestAudi
               Close
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto my-3 space-y-2 font-mono text-[11px] pr-1">
+          <div className="flex-1 overflow-y-auto my-3 space-y-2 font-mono text-[0.6875rem] pr-1">
             {events.length === 0 ? (
               <p className="text-sage-400 text-center py-6">No events yet.</p>
             ) : (
@@ -162,9 +162,9 @@ export default function DemoControls({ activeScreen, canWalk, onWalkWithTestAudi
                   <div key={idx} className="p-2.5 rounded-xl bg-grove-950/90 border border-moss-500/15">
                     <div className="flex items-center justify-between text-firefly-300 font-bold mb-1">
                       <span>{type}</span>
-                      <span className="text-sage-400 text-[10px]">{new Date(ts).toLocaleTimeString()}</span>
+                      <span className="text-sage-400 text-[0.625rem]">{new Date(ts).toLocaleTimeString()}</span>
                     </div>
-                    <pre className="text-sage-200 whitespace-pre-wrap overflow-x-auto text-[10px]">
+                    <pre className="text-sage-200 whitespace-pre-wrap overflow-x-auto text-[0.625rem]">
                       {JSON.stringify(trail ? { ...fields, trail: `[${trail.length} points]` } : fields, null, 2)}
                     </pre>
                   </div>
@@ -172,7 +172,7 @@ export default function DemoControls({ activeScreen, canWalk, onWalkWithTestAudi
               })
             )}
           </div>
-          <div className="pt-2 border-t border-grove-800 flex justify-end text-[11px]">
+          <div className="pt-2 border-t border-grove-800 flex justify-end text-[0.6875rem]">
             <button onClick={() => setEvents([])} className="text-red-300 hover:text-red-200">
               Clear
             </button>

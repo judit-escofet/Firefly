@@ -48,8 +48,8 @@ export default function NavigationBanner({ children }) {
               <div className="text-lg font-bold">Finding a new way…</div>
             ) : (
               <>
-                <div className="text-[17px] font-bold leading-snug truncate">{nav.text}</div>
-                {dist && <div className="text-[14px] text-lichen-200">in {dist.value} {dist.unit}{nav.then ? <span className="text-lichen-400"> · then {nav.then.replace(/^then\s+/i, '')}</span> : null}</div>}
+                <div className="text-[1.0625rem] font-bold leading-snug truncate">{nav.text}</div>
+                {dist && <div className="text-[0.875rem] text-lichen-200">in {dist.value} {dist.unit}{nav.then ? <span className="text-lichen-400"> · then {nav.then.replace(/^then\s+/i, '')}</span> : null}</div>}
               </>
             )}
           </div>

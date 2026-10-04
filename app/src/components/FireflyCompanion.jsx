@@ -6,12 +6,12 @@ import React from 'react';
  * parchment note above it, so its words look different from the app's own text.
  */
 export default function FireflyCompanion({ isSpeaking = false, message = null, size = 'md', onClick = null, friendlyNote = null }) {
-  const px = { sm: 44, md: 72, lg: 112 }[size] ?? 72;
+  const px = { sm: '2.75rem', md: '4.5rem', lg: '7rem' }[size] ?? '4.5rem';
 
   return (
     <div className="relative flex flex-col items-end select-none">
       {message && (
-        <div className="note relative mb-3 max-w-[17rem] rounded-2xl rounded-br-md px-3.5 py-2.5 text-[15px] leading-snug animate-rise-in" aria-live="polite">
+        <div className="note relative mb-3 max-w-[17rem] rounded-2xl rounded-br-md px-3.5 py-2.5 text-[0.9375rem] leading-snug animate-rise-in" aria-live="polite">
           <p>{message}</p>
           {friendlyNote && <p className="mt-1 font-display italic text-xs text-night-600">{friendlyNote}</p>}
           <svg className="absolute -bottom-2 right-5" width="14" height="10" viewBox="0 0 14 10" aria-hidden="true">

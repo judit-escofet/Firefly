@@ -4,6 +4,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Everything is sized in rem, and the root size follows the screen: about 16px on a typical
+   phone, smaller on short or narrow ones, up to 18px on tablets and laptops. So each screen fits
+   its viewport without scrolling. */
+html {
+  font-size: clamp(12px, min(2vh, 4.3vw), 18px);
+  font-size: clamp(12px, min(2dvh, 4.3vw), 18px);
+}
+html, body, #root {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
 :root {
   font-family: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
   color-scheme: dark;
@@ -20,7 +32,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
   -webkit-user-select: none;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 input, textarea {

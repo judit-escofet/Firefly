@@ -60,8 +60,8 @@ export default function DestinationSheet({ isOpen, home, onClose, onStart }) {
         className={`w-full text-left px-4 py-3 rounded-xl flex items-start gap-3 border transition-colors ${selected ? 'border-lantern-400/80 bg-lantern-400/10' : 'border-parchment-100/10 bg-night-950/50 hover:border-parchment-100/25'}`}>
         <span className="mt-0.5 shrink-0">{icon}</span>
         <span className="min-w-0">
-          <span className="block font-bold text-[16px] text-parchment-50 truncate">{place.label}</span>
-          {place.detail && <span className="block text-[13px] text-lichen-300 truncate">{place.detail}</span>}
+          <span className="block font-bold text-[1rem] text-parchment-50 truncate">{place.label}</span>
+          {place.detail && <span className="block text-[0.8125rem] text-lichen-300 truncate">{place.detail}</span>}
         </span>
       </button>
     );
@@ -82,7 +82,7 @@ export default function DestinationSheet({ isOpen, home, onClose, onStart }) {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-lichen-400" />
           <input ref={input} value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" enterKeyHint="search"
             placeholder="Search a place or an address"
-            className="w-full pl-10 pr-10 h-12 rounded-xl bg-night-950 border border-parchment-100/15 text-[16px] text-parchment-50 placeholder:text-lichen-500 focus:outline-none focus:border-lantern-400" />
+            className="w-full pl-10 pr-10 h-12 rounded-xl bg-night-950 border border-parchment-100/15 text-[1rem] text-parchment-50 placeholder:text-lichen-500 focus:outline-none focus:border-lantern-400" />
           {busy && <Loader2 className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-lantern-300" />}
         </label>
 
@@ -90,13 +90,13 @@ export default function DestinationSheet({ isOpen, home, onClose, onStart }) {
           {home && option({ ...home, label: home.label || 'Home', detail: 'Saved home' }, <Home className="w-4 h-4 text-lantern-300" />, 'home')}
           {results.map((r, i) => option(r, <MapPin className="w-4 h-4 text-lichen-300" />, `${r.lat},${r.lng},${i}`))}
           {!busy && query.trim().length >= 3 && !results.length && !error && (
-            <p className="text-[14px] text-lichen-300 px-1">Nothing by that name. A street address usually works.</p>
+            <p className="text-[0.875rem] text-lichen-300 px-1">Nothing by that name. A street address usually works.</p>
           )}
-          {error && <p className="text-[14px] text-ember-400 px-1">Search isn't working right now ({error}).</p>}
+          {error && <p className="text-[0.875rem] text-ember-400 px-1">Search isn't working right now ({error}).</p>}
         </div>
 
         <button type="button" disabled={!picked} onClick={() => picked && onStart({ lat: picked.lat, lng: picked.lng, label: picked.label || 'Home' })}
-          className="btn-lantern mt-4 w-full h-14 rounded-2xl text-[17px] font-bold disabled:opacity-40">
+          className="btn-lantern mt-4 w-full h-14 rounded-2xl text-[1.0625rem] font-bold disabled:opacity-40">
           {picked ? `Walk to ${picked.label || 'Home'}` : 'Pick a place first'}
         </button>
       </div>

@@ -30,7 +30,7 @@ export default function Emergency911Modal({ isOpen, onClose, currentCoords }) {
             In production on your phone, tapping this button opens the phone dialer with <span className="font-mono text-white bg-grove-800 px-1 py-0.5 rounded">911</span>. The app never places calls silently.
           </p>
           {currentCoords && (
-            <div className="pt-1 text-[11px] text-moss-300 font-mono">
+            <div className="pt-1 text-[0.6875rem] text-moss-300 font-mono">
               Grove Coordinates: {currentCoords.lat.toFixed(5)}, {currentCoords.lng.toFixed(5)}
             </div>
           )}

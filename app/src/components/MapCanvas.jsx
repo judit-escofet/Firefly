@@ -147,7 +147,7 @@ export default function MapCanvas({
             <rect x="7" y="13" width="16" height="13" fill="#0c1511" stroke="#efe6d0" stroke-width="1.4"/>
             <rect x="10" y="16" width="4.5" height="4.5" fill="#ffd27a"/>
           </svg>
-          <span class="mt-1 px-2 py-0.5 rounded-md bg-night-950/90 text-[12px] font-bold text-parchment-100 whitespace-nowrap">${label}</span>
+          <span class="mt-1 px-2 py-0.5 rounded-md bg-night-950/90 text-[0.75rem] font-bold text-parchment-100 whitespace-nowrap">${label}</span>
         </div>
       `;
 
@@ -243,7 +243,7 @@ export default function MapCanvas({
 
       {showRecenter && (
         <button type="button" onClick={recenter}
-          className="absolute right-3 top-[45%] z-20 flex items-center gap-1.5 px-4 h-11 rounded-full surface text-parchment-100 text-[14px] font-bold active:translate-y-px">
+          className="absolute right-3 top-[45%] z-20 flex items-center gap-1.5 px-4 h-11 rounded-full surface text-parchment-100 text-[0.875rem] font-bold active:translate-y-px">
           <LocateFixed className="w-4 h-4" /> Recenter
         </button>
       )}

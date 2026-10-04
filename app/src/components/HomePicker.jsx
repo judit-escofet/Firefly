@@ -7,7 +7,7 @@ import { MOCK_HOME } from '../services/mockData';
  * "Home address on a map" (P4 spec, setup step 3): tap the map to place home, or use the
  * current location. value = {lat, lng, label}. Arrival is detected within 30 m of this point.
  */
-export default function HomePicker({ value, onChange }) {
+export default function HomePicker({ value, onChange, fill = false }) {
   const el = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -23,7 +23,11 @@ export default function HomePicker({ value, onChange }) {
     L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, maxNativeZoom: 16, className: 'tiles-dark' }).addTo(map);
     map.on('click', (e) => onChange({ ...latest.current, lat: Number(e.latlng.lat.toFixed(6)), lng: Number(e.latlng.lng.toFixed(6)) }));
     mapRef.current = map;
+    // The map's box grows and shrinks with the screen: keep Leaflet's idea of its size in step.
+    const resize = new ResizeObserver(() => map.invalidateSize());
+    resize.observe(el.current);
     return () => {
+      resize.disconnect();
       map.remove();
       mapRef.current = null;
       markerRef.current = null; // it belonged to the removed map (StrictMode remounts)
@@ -60,8 +64,8 @@ export default function HomePicker({ value, onChange }) {
   };
 
   return (
-    <div className="space-y-3">
-      <div ref={el} className="w-full h-52 rounded-2xl overflow-hidden border border-parchment-100/15" aria-label="Map: tap to set home" />
+    <div className={`flex flex-col gap-2.5 ${fill ? 'flex-1 min-h-0' : ''}`}>
+      <div ref={el} className={`w-full ${fill ? 'flex-1 min-h-[5rem]' : 'h-52'} rounded-2xl overflow-hidden border border-parchment-100/15`} aria-label="Map: tap to set home" />
       <div className="flex gap-2">
         <input
           type="text"
@@ -69,9 +73,9 @@ export default function HomePicker({ value, onChange }) {
           onChange={(e) => onChange({ ...home, label: e.target.value })}
           placeholder="Call it… Home, Dorm"
           aria-label="Home name"
-          className="flex-1 min-w-0 px-4 h-12 rounded-xl bg-night-950 border border-parchment-100/15 text-[16px] text-parchment-50 placeholder:text-lichen-500 focus:outline-none focus:border-lantern-400"
+          className="flex-1 min-w-0 px-4 h-12 rounded-xl bg-night-950 border border-parchment-100/15 text-[1rem] text-parchment-50 placeholder:text-lichen-500 focus:outline-none focus:border-lantern-400"
         />
-        <button type="button" onClick={useMyLocation} className="btn-quiet h-12 px-4 rounded-xl text-[15px] flex items-center gap-2 shrink-0">
+        <button type="button" onClick={useMyLocation} className="btn-quiet h-12 px-4 rounded-xl text-[0.9375rem] flex items-center gap-2 shrink-0">
           <LocateFixed className="w-4 h-4" />
           <span>{locating ? 'Finding you…' : "I'm home now"}</span>
         </button>

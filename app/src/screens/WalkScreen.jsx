@@ -82,13 +82,13 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
         <DispatchCallPanel />
 
         {alerted && (
-          <div className="px-4 py-3 rounded-2xl surface text-[15px] text-parchment-50 animate-rise-in">
+          <div className="px-4 py-3 rounded-2xl surface text-[0.9375rem] text-parchment-50 animate-rise-in">
             Your people know where you are now.
           </div>
         )}
 
         {!wakeLock.supported && (
-          <div className="px-4 py-2 rounded-xl surface text-[13px] text-lichen-300 flex items-center gap-2">
+          <div className="px-4 py-2 rounded-xl surface text-[0.8125rem] text-lichen-300 flex items-center gap-2">
             <Info className="w-4 h-4 text-lantern-300 shrink-0" />
             <span>Keep your screen on while you walk (this browser can't do it for you).</span>
           </div>
@@ -105,11 +105,11 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
               <span className="text-base text-lichen-300"> {remainingUnit}</span>
             </p>
             <div className="flex flex-col items-end min-w-0 pb-0.5">
-              <span className={`flex items-center gap-1.5 text-[13px] ${listening === 'listening' ? 'text-moss-300' : listening === 'mic off' ? 'text-ember-400' : 'text-lichen-400'}`}>
+              <span className={`flex items-center gap-1.5 text-[0.8125rem] ${listening === 'listening' ? 'text-moss-300' : listening === 'mic off' ? 'text-ember-400' : 'text-lichen-400'}`}>
                 {listening === 'mic off' ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                 {listening === 'listening' ? 'Listening' : listening === 'mic off' ? "Can't hear you" : 'Starting…'}
               </span>
-              {heard && <span className="text-[12px] text-lichen-300 mt-0.5 max-w-[10rem] truncate italic">“{heard}”</span>}
+              {heard && <span className="text-[0.75rem] text-lichen-300 mt-0.5 max-w-[10rem] truncate italic">“{heard}”</span>}
             </div>
           </div>
         </NavigationBanner>
@@ -124,14 +124,14 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
           <a
             href={`tel:${DEMO_DISPATCH_TEL}`}
             onClick={handle911Press}
-            className="flex-1 h-14 rounded-2xl bg-ember-500 hover:bg-ember-400 text-white font-bold text-[17px] flex items-center justify-center gap-2 shadow-press active:translate-y-px touch-manipulation"
+            className="flex-1 h-14 rounded-2xl bg-ember-500 hover:bg-ember-400 text-white font-bold text-[1.0625rem] flex items-center justify-center gap-2 shadow-press active:translate-y-px touch-manipulation"
           >
             <PhoneCall className="w-5 h-5" />
             Call 911
           </a>
           <button
             onClick={onEndWalk}
-            className="h-14 px-5 rounded-2xl surface text-parchment-100 font-bold text-[15px] active:translate-y-px"
+            className="h-14 px-5 rounded-2xl surface text-parchment-100 font-bold text-[0.9375rem] active:translate-y-px"
           >
             End walk
           </button>

@@ -39,32 +39,32 @@ export default function HomeScreen({
   const who = names.length === 0 ? 'Your people' : names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 
   return (
-    <div className="relative min-h-[100dvh] flex flex-col night-sky select-none overflow-hidden">
+    <div className="relative h-[100dvh] flex flex-col night-sky select-none overflow-hidden">
       <ParticleCanvas count={10} />
 
-      <main className="relative z-10 flex-1 px-6 pt-[max(3rem,env(safe-area-inset-top))] max-w-md w-full mx-auto">
-        <p className="text-[15px] text-lichen-300 animate-rise-in">{minutes} min · {dist.value} {dist.unit}</p>
+      <main className="relative z-10 shrink-0 px-6 pt-[max(clamp(1.25rem,7dvh,4rem),env(safe-area-inset-top))] max-w-md w-full mx-auto">
+        <p className="text-[0.9375rem] text-lichen-300 animate-rise-in">{minutes} min · {dist.value} {dist.unit}</p>
         <div className="mt-2 flex items-start justify-between gap-2">
           <h1 className="font-display text-[2.8rem] leading-[1.02] font-medium text-parchment-50 animate-rise-in" style={{ animationDelay: '60ms' }}>
             You're home.
           </h1>
           <div className="-mt-3 shrink-0"><FireflyCompanion size="sm" /></div>
         </div>
-        <p className="mt-4 text-[17px] leading-relaxed text-lichen-200 animate-rise-in" style={{ animationDelay: '120ms' }}>
+        <p className="mt-4 text-[1.0625rem] leading-relaxed text-lichen-200 animate-rise-in" style={{ animationDelay: '120ms' }}>
           {who} got a text saying you made it. Thanks for letting me walk with you.
         </p>
       </main>
 
-      <div className="relative mt-8 pointer-events-none">
-        <GroveScene litWindow className="h-[clamp(110px,24dvh,210px)] block" />
+      <div className="relative flex-1 min-h-0 mt-4 flex items-end pointer-events-none tiny:invisible">
+        <GroveScene litWindow className="w-full h-full max-h-[16rem]" />
       </div>
-      <footer className="relative z-10 bg-[#0b1510] px-6 pt-1 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <footer className="relative z-10 shrink-0 bg-[#0b1510] tiny:bg-transparent px-6 pt-1 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="max-w-md mx-auto flex gap-3">
-          <button onClick={handleShare} className="btn-quiet h-14 px-5 rounded-2xl text-[15px] font-bold flex items-center gap-2">
+          <button onClick={handleShare} className="btn-quiet h-14 px-5 rounded-2xl text-[0.9375rem] font-bold flex items-center gap-2">
             {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
             {copied ? 'Copied' : 'Share'}
           </button>
-          <button onClick={onReset} className="btn-lantern flex-1 h-14 rounded-2xl text-[17px] font-bold">
+          <button onClick={onReset} className="btn-lantern flex-1 h-14 rounded-2xl text-[1.0625rem] font-bold">
             Goodnight
           </button>
         </div>

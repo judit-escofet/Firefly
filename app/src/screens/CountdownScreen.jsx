@@ -61,17 +61,17 @@ export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, on
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-between p-6 bg-night-950 text-parchment-100 select-none">
-      <div className="pt-6 text-center">
-        <p className="text-[15px] tabular-nums text-lichen-400" aria-live="polite">
+    <div className="fixed inset-0 z-50 flex flex-col justify-between px-6 py-[clamp(0.75rem,3dvh,1.5rem)] bg-night-950 text-parchment-100 select-none">
+      <div className="pt-[clamp(0rem,3dvh,1.5rem)] text-center">
+        <p className="text-[0.9375rem] tabular-nums text-lichen-400" aria-live="polite">
           {Number.isFinite(secondsLeft) ? `${secondsLeft}s` : ''}
         </p>
       </div>
 
       <div className="flex flex-col items-center justify-center my-auto w-full max-w-xs mx-auto">
-        <h2 className="font-display text-2xl font-medium text-parchment-50 text-center mb-7">Enter your PIN to continue</h2>
+        <h2 className="font-display text-2xl font-medium text-parchment-50 text-center mb-[clamp(0.75rem,3.5dvh,1.75rem)]">Enter your PIN to continue</h2>
 
-        <div className={`flex gap-4 mb-8 ${shake ? 'animate-shake' : ''}`} aria-label={`${pinDigits.length} of 4 digits entered`}>
+        <div className={`flex gap-4 mb-[clamp(0.75rem,4dvh,2rem)] ${shake ? 'animate-shake' : ''}`} aria-label={`${pinDigits.length} of 4 digits entered`}>
           {[0, 1, 2, 3].map((idx) => (
             <div
               key={idx}
@@ -82,7 +82,7 @@ export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, on
           ))}
         </div>
 
-        <div className="grid grid-cols-3 gap-3 w-full">
+        <div className="grid grid-cols-3 gap-[clamp(0.4rem,1.5dvh,0.75rem)] w-full">
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
             <button
               key={num}
@@ -90,7 +90,7 @@ export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, on
               onClick={() => handleDigit(num)}
               disabled={isVerifying}
               aria-label={`digit ${num}`}
-              className="h-16 rounded-2xl bg-night-850 active:bg-night-700 text-[1.6rem] font-display text-parchment-50 flex items-center justify-center touch-manipulation"
+              className="h-[min(4rem,9.5dvh)] rounded-2xl bg-night-850 active:bg-night-700 text-[1.6rem] font-display text-parchment-50 flex items-center justify-center touch-manipulation"
             >
               {num}
             </button>
@@ -101,7 +101,7 @@ export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, on
             onClick={() => handleDigit('0')}
             disabled={isVerifying}
             aria-label="digit 0"
-            className="h-16 rounded-2xl bg-night-850 active:bg-night-700 text-[1.6rem] font-display text-parchment-50 flex items-center justify-center touch-manipulation"
+            className="h-[min(4rem,9.5dvh)] rounded-2xl bg-night-850 active:bg-night-700 text-[1.6rem] font-display text-parchment-50 flex items-center justify-center touch-manipulation"
           >
             0
           </button>
@@ -110,14 +110,14 @@ export default function CountdownScreen({ secondsLeft, userId, cancelPinHash, on
             onClick={handleDelete}
             disabled={isVerifying}
             aria-label="delete digit"
-            className="h-16 rounded-2xl active:bg-night-850 text-lichen-400 flex items-center justify-center touch-manipulation"
+            className="h-[min(4rem,9.5dvh)] rounded-2xl active:bg-night-850 text-lichen-400 flex items-center justify-center touch-manipulation"
           >
             <Delete className="w-6 h-6" />
           </button>
         </div>
       </div>
 
-      <div className="pb-6" />
+      <div className="pb-[clamp(0rem,3dvh,1.5rem)]" />
     </div>
   );
 }

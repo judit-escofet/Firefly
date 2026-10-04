@@ -161,14 +161,14 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
     }
   };
 
-  const input = 'w-full px-4 h-12 rounded-xl bg-night-950 border border-parchment-100/15 text-[16px] text-parchment-50 placeholder:text-lichen-500 focus:outline-none focus:border-lantern-400';
-  const label = 'block text-[15px] font-bold text-parchment-100 mb-1.5';
-  const help = 'text-[14px] leading-relaxed text-lichen-300';
+  const input = 'w-full px-4 h-12 rounded-xl bg-night-950 border border-parchment-100/15 text-[1rem] text-parchment-50 placeholder:text-lichen-500 focus:outline-none focus:border-lantern-400';
+  const label = 'block text-[0.9375rem] font-bold text-parchment-100 mb-1.5';
+  const help = 'text-[0.875rem] leading-relaxed text-lichen-300';
   const titles = ['', 'First, a little about you', 'Your secret signal', 'Small talk, and home'];
 
   return (
-    <div className="min-h-[100dvh] flex flex-col night-sky select-none">
-      <header className="px-5 pt-[max(1rem,env(safe-area-inset-top))] max-w-md w-full mx-auto">
+    <div className="h-[100dvh] flex flex-col overflow-hidden night-sky select-none">
+      <header className="shrink-0 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] max-w-md land:max-w-3xl w-full mx-auto">
         <div className="flex items-center gap-3 h-11">
           <button
             onClick={step > 1 ? () => setStep(step - 1) : onBack}
@@ -185,21 +185,21 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
           </div>
           <span className="ml-auto text-sm text-lichen-400">{step} of 3</span>
         </div>
-        <h2 key={step} className="mt-5 font-display text-[2rem] leading-tight font-medium text-parchment-50 animate-rise-in">
+        <h2 key={step} className="mt-[clamp(0.25rem,2.5dvh,1.25rem)] font-display text-[2rem] short:text-[1.7rem] leading-tight font-medium text-parchment-50 animate-rise-in">
           {titles[step]}
         </h2>
       </header>
 
-      <main className="flex-1 px-5 pt-5 pb-4 max-w-md w-full mx-auto">
+      <main className="flex-1 min-h-0 flex flex-col px-5 pt-[clamp(0.5rem,2.5dvh,1.25rem)] pb-2 max-w-md land:max-w-3xl w-full mx-auto overflow-y-auto">
         {error && (
-          <div className="mb-5 px-4 py-3 rounded-xl bg-ember-600/15 border border-ember-500/40 text-[15px] text-parchment-50 flex items-start gap-2.5 animate-shake" role="alert">
+          <div className="mb-5 px-4 py-3 rounded-xl bg-ember-600/15 border border-ember-500/40 text-[0.9375rem] text-parchment-50 flex items-start gap-2.5 animate-shake" role="alert">
             <AlertCircle className="w-4 h-4 text-ember-400 mt-0.5 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {step === 1 && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-[clamp(1rem,3.5dvh,1.75rem)] animate-fade-in">
             <div>
               <label htmlFor="setup-name" className={label}>Your name</label>
               <input id="setup-name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="What should I call you?" autoComplete="given-name" className={input} />
@@ -227,7 +227,7 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
                 ))}
               </div>
               {contacts.length < 3 && (
-                <button onClick={addContact} className="mt-3 text-[15px] text-lantern-300 hover:text-lantern-200 underline decoration-lantern-300/30 underline-offset-4">
+                <button onClick={addContact} className="mt-3 text-[0.9375rem] text-lantern-300 hover:text-lantern-200 underline decoration-lantern-300/30 underline-offset-4">
                   Add someone else
                 </button>
               )}
@@ -236,27 +236,27 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
         )}
 
         {step === 2 && (
-          <div className="space-y-7 animate-fade-in">
+          <div className="space-y-[clamp(1rem,3.5dvh,1.75rem)] land:space-y-0 land:grid land:grid-cols-2 land:gap-8 animate-fade-in">
             <div>
               <label htmlFor="setup-phrase" className={label}>Code phrase</label>
               <p className={`${help} mb-3`}>
                 Something you'd say on a normal phone call, so nobody nearby notices. When I hear it, I start a quiet 10-second countdown.
               </p>
               <input id="setup-phrase" type="text" value={codePhrase} onChange={e => setCodePhrase(e.target.value)}
-                placeholder="the moon is bright tonight" className={`${input} font-display italic text-[17px]`} />
+                placeholder="the moon is bright tonight" className={`${input} font-display italic text-[1.0625rem]`} />
               <div className="mt-3 flex items-center gap-3">
                 <button type="button" onClick={handleTestMic}
-                  className={`h-11 px-4 rounded-full text-[15px] font-bold flex items-center gap-2 transition-colors ${
+                  className={`h-11 px-4 rounded-full text-[0.9375rem] font-bold flex items-center gap-2 transition-colors ${
                     micTestPassed ? 'bg-moss-500/25 text-moss-300 border border-moss-400/50'
                       : isTestingMic ? 'bg-lantern-400 text-night-950'
                       : 'btn-quiet'}`}>
                   {micTestPassed ? <Check className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                   <span>{isTestingMic ? 'Listening… tap to stop' : micTestPassed ? 'Got it' : 'Say it once'}</span>
                 </button>
-                {!phraseTest && <span className="text-[14px] text-lichen-400">to check I can hear it</span>}
+                {!phraseTest && <span className="text-[0.875rem] text-lichen-400">to check I can hear it</span>}
               </div>
               {phraseTest && (
-                <p className={`mt-2 text-[14px] leading-relaxed ${micTestPassed ? 'text-moss-300' : phraseTest.state === 'listening' ? 'text-lichen-300' : 'text-lantern-200'}`} aria-live="polite">
+                <p className={`mt-2 text-[0.875rem] leading-relaxed ${micTestPassed ? 'text-moss-300' : phraseTest.state === 'listening' ? 'text-lichen-300' : 'text-lantern-200'}`} aria-live="polite">
                   {phraseTest.state === 'listening' && (phraseTest.heard ? `Hearing: “${phraseTest.heard}”` : 'Go ahead, say it out loud…')}
                   {micTestPassed && `I'll catch “${phraseTest.heard}” on a walk.`}
                   {(phraseTest.state === 'failed' || phraseTest.state === 'error') &&
@@ -265,7 +265,7 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
               )}
             </div>
 
-            <div className="pt-6 border-t border-parchment-100/10">
+            <div className="pt-[clamp(1rem,3.5dvh,1.75rem)] border-t border-parchment-100/10 land:pt-0 land:border-t-0">
               <span className={label}>A 4-digit PIN</span>
               <p className={`${help} mb-3`}>
                 Your PIN stops the countdown. If someone makes you cancel, type any other code: the screen says “All good” just the same, but I quietly get you help.
@@ -283,16 +283,16 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
         )}
 
         {step === 3 && (
-          <div className="space-y-7 animate-fade-in">
+          <div className="flex-1 min-h-0 flex flex-col gap-[clamp(1rem,3dvh,1.75rem)] land:grid land:grid-cols-2 land:gap-8 animate-fade-in">
             <div>
               <span className={label}>What should we chat about?</span>
-              <p className={`${help} mb-3`}>I'll bring up news on these when it goes quiet.</p>
-              <div className="flex flex-wrap gap-2">
+              <p className={`${help} mb-2.5 short:hidden`}>I'll bring up news on these when it goes quiet.</p>
+              <div className="flex flex-wrap gap-1.5">
                 {NEWS_TOPICS.map(([text, topic]) => {
                   const on = newsInterests.includes(topic);
                   return (
                     <button key={topic} type="button" aria-pressed={on} onClick={() => toggleNewsInterest(topic)}
-                      className={`h-10 px-4 rounded-full text-[15px] transition-colors border ${
+                      className={`h-9 px-3.5 rounded-full text-[0.875rem] transition-colors border ${
                         on ? 'bg-lantern-400/15 border-lantern-400/70 text-lantern-200' : 'border-parchment-100/15 text-lichen-300 hover:border-parchment-100/35'}`}>
                       {on && <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" />}{text}
                     </button>
@@ -301,29 +301,29 @@ export default function SetupScreen({ onComplete, onBack, initialProfile = null 
               </div>
             </div>
 
-            <div>
+            <div className="flex-1 min-h-0 flex flex-col">
               <span className={label}>Where's home?</span>
-              <p className={`${help} mb-3`}>Tap the map. When you're within about 100 feet of it, I'll know you made it.</p>
-              <HomePicker value={home} onChange={setHome} />
+              <p className={`${help} mb-2.5 tiny:hidden`}>Tap the map. When you're within about 100 feet of it, I'll know you made it.</p>
+              <HomePicker value={home} onChange={setHome} fill />
             </div>
           </div>
         )}
       </main>
 
-      <footer className="sticky bottom-0 px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-night-950 via-night-950 to-transparent">
-        <div className="max-w-md mx-auto">
+      <footer className="shrink-0 px-5 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="max-w-md land:max-w-3xl mx-auto">
           {step === 1 && (
-            <button onClick={handleNextFromStep1} className="btn-lantern w-full h-14 rounded-2xl text-[17px] font-bold flex items-center justify-center gap-2">
+            <button onClick={handleNextFromStep1} className="btn-lantern w-full h-14 rounded-2xl text-[1.0625rem] font-bold flex items-center justify-center gap-2">
               Next <ArrowRight className="w-5 h-5" />
             </button>
           )}
           {step === 2 && (
-            <button onClick={handleNextFromStep2} className="btn-lantern w-full h-14 rounded-2xl text-[17px] font-bold flex items-center justify-center gap-2">
+            <button onClick={handleNextFromStep2} className="btn-lantern w-full h-14 rounded-2xl text-[1.0625rem] font-bold flex items-center justify-center gap-2">
               Next <ArrowRight className="w-5 h-5" />
             </button>
           )}
           {step === 3 && (
-            <button onClick={handleSaveProfile} disabled={isSubmitting} className="btn-lantern w-full h-14 rounded-2xl text-[17px] font-bold disabled:opacity-60">
+            <button onClick={handleSaveProfile} disabled={isSubmitting} className="btn-lantern w-full h-14 rounded-2xl text-[1.0625rem] font-bold disabled:opacity-60">
               {isSubmitting ? 'Saving…' : "All set, let's go"}
             </button>
           )}
