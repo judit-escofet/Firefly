@@ -44,7 +44,7 @@ test('system prompt carries memory, news (with source) and ETA context', () => {
   const p = systemPrompt({ name: 'Priya', mode: 'chat', memory: ['Has an exam Friday'], news: [{ title: 'New album out', source: 'NPR' }], context: { eta_s: 420, remaining_m: 600 } });
   assert.match(p, /Has an exam Friday/);
   assert.match(p, /New album out \(NPR\)/);
-  assert.match(p, /7 minutes to home, 600 m left/);
+  assert.match(p, /7 minutes to home, 0.4 miles left/);
   assert.match(p, /Never invent news/);
 });
 

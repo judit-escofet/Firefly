@@ -7,6 +7,7 @@ const path = require('path');
 for (const k of Object.keys(process.env)) if (/^(TWILIO|WS|CLIPS|AWS)_/.test(k)) delete process.env[k];
 process.env.PUBLIC_BASE_URL = 'https://firefly.test';
 process.env.MOCK_MAPS = '1';
+process.env.OSM_ROUTES = '0'; // tests never call the real routing service
 
 // ---- fake db: route SQL to handlers by a regex ----
 const calls = [];

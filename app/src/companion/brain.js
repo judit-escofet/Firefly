@@ -6,7 +6,9 @@
 //          is dropped and her words are answered together once she pauses.
 //          After 90 s of quiet, casually bring something up (mode "idle"); each further silence
 //          waits twice as long (90 s, 3 min, 6 min…), reset as soon as she talks.
-// ETA      time to home is mentioned at most once every 5 minutes (context.eta_due), not every turn.
+// ETA      every 5 minutes the firefly says the time to home itself ("About 12 minutes to go,
+//          0.6 miles left."), at a quiet moment: never while she or the firefly is talking. The model
+//          doesn't bring up the time on its own (eta_due false); it only answers if she asks.
 // checkin  on checkin.request: speak the prompt, then classify her next words (keywords first,
 //          the model only if unclear) → checkin.answered {ok, text} within ~1 s; 20 s of
 //          silence after the prompt → {ok: null}.
@@ -15,6 +17,7 @@
 // News is offered at most once every 3 minutes, and only items from /api/news.
 
 import { classifyCheckinKeywords } from './checkinWords.js';
+import { spokenDistance } from '../services/units.js';
 
 export const TURN_SILENCE_MS = 1800;
 export const IDLE_MS = 90000;
@@ -48,7 +51,8 @@ export function createBrain({
   let checkinReason = null;
   let inFlight = false;
   const history = []; // {speaker: 'user'|'firefly', text}
-  const timers = { turn: null, idle: null, checkin: null, calm: null };
+  const timers = { turn: null, idle: null, checkin: null, calm: null, eta: null };
+  let etaPhrase = 0;
 
   const clear = (name) => {
     if (timers[name] !== null) clock.clearTimeout(timers[name]);
@@ -67,6 +71,36 @@ export function createBrain({
     set('idle', () => takeTurn({ idle: true }), Math.min(IDLE_MS * 2 ** idleStreak, IDLE_MAX_MS));
   }
 
+  // The 5-minute time update, spoken without a model call.
+  function etaLine() {
+    const { eta_s: eta, remaining_m: left } = getContext();
+    if (!Number.isFinite(eta) || !Number.isFinite(left) || left < 60) return null; // unknown, or nearly there
+    const mins = Math.max(1, Math.round(eta / 60));
+    const m = `${mins} minute${mins === 1 ? '' : 's'}`;
+    const d = spokenDistance(left);
+    const lines = [`About ${m} to go, ${d} left.`, `Just so you know, about ${m} to home.`, `${d[0].toUpperCase()}${d.slice(1)} to go, around ${m}.`];
+    return lines[etaPhrase++ % lines.length];
+  }
+
+  function armEta() {
+    if (!active) return clear('eta');
+    set('eta', etaTick, Math.max(1000, ETA_GAP_MS - (clock.now() - lastEtaAt)));
+  }
+
+  function etaTick() {
+    if (!active) return;
+    if (alertActive || awaitingAnswer || mode === 'checkin') return set('eta', etaTick, 30000);
+    if (clock.now() - lastEtaAt < ETA_GAP_MS) return armEta();
+    // Wait for a quiet moment: nobody talking, no reply on its way, nothing she said unanswered.
+    if (speaking || inFlight || pending.trim() || timers.turn !== null || clock.now() - lastHeardAt < 4000) {
+      return set('eta', etaTick, 5000);
+    }
+    lastEtaAt = clock.now();
+    const text = etaLine();
+    armEta();
+    if (text) speak(text, clock.now()).then(() => armIdle(), () => {});
+  }
+
   async function speak(text, t0) {
     history.push({ speaker: 'firefly', text });
     await say(text, { t0 });
@@ -75,12 +109,11 @@ export function createBrain({
   // Build the request for the current state without changing it (speculation must be free).
   function request({ idle, userText }) {
     const offerNews = clock.now() - lastNewsAt >= NEWS_GAP_MS;
-    const etaDue = !alertActive && clock.now() - lastEtaAt >= ETA_GAP_MS;
     return turn({
       ...identity(),
       user_text: userText,
       mode: alertActive ? 'calm' : idle ? 'idle' : 'chat',
-      context: { ...getContext(), checkin_reason: null, eta_due: etaDue },
+      context: { ...getContext(), checkin_reason: null, eta_due: false },
       history: history.slice(-8),
       news: offerNews ? getNews().slice(0, 3) : [],
     });
@@ -104,7 +137,6 @@ export function createBrain({
     pending = '';
     inFlight = true;
     const t0 = idle || !userText ? clock.now() : lastFinalAt;
-    const etaWasDue = clock.now() - lastEtaAt >= ETA_GAP_MS;
     const reuse = !idle && userText && spec?.text === userText ? spec.promise : null;
     spec = null;
     if (idle) idleStreak += 1;
@@ -119,7 +151,7 @@ export function createBrain({
       }
       if (userText) history.push({ speaker: 'user', text: userText });
       if (reply.topic === 'news') lastNewsAt = clock.now();
-      if (etaWasDue || reply.topic === 'eta') lastEtaAt = clock.now();
+      if (reply.topic === 'eta') lastEtaAt = clock.now(); // she asked: the next update can wait 5 min
       if (awaitingAnswer) return; // a check-in started meanwhile: don't talk over it
       await speak(reply.reply_text, t0);
     } finally {
@@ -170,6 +202,7 @@ export function createBrain({
       const greet = (await line('greeting')) ?? "Hey, I'm here with you. How was your day?";
       if (active) await speak(greet, clock.now());
       armIdle();
+      armEta();
     },
 
     heard({ text, final }) {

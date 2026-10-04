@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Home, Share2, Check, Clock, Navigation, Heart, Sparkles, Moon, Footprints } from 'lucide-react';
+import { formatDistance } from '../services/units';
 
 export default function HomeScreen({
   summary = { duration_seconds: 660, distance_meters: 850 },
@@ -9,8 +10,8 @@ export default function HomeScreen({
   const [copied, setCopied] = useState(false);
 
   const minutes = Math.max(1, Math.round((summary?.duration_seconds || 660) / 60));
-  const distanceKm = ((summary?.distance_meters || 850) / 1000).toFixed(1);
-  const shareText = `Walked home with Firefly: ${distanceKm} km, ${minutes} min 🌙✨`;
+  const dist = formatDistance(summary?.distance_meters || 850);
+  const shareText = `Walked home with Firefly: ${dist.value} ${dist.unit}, ${minutes} min 🌙✨`;
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -68,7 +69,7 @@ export default function HomeScreen({
               <span>Distance</span>
             </div>
             <div className="text-3xl font-cinzel font-bold text-white tracking-tight">
-              {distanceKm} <span className="text-sm font-sans font-normal text-pastel-lavender">km</span>
+              {dist.value} <span className="text-sm font-sans font-normal text-pastel-lavender">{dist.unit}</span>
             </div>
           </div>
         </div>
@@ -97,7 +98,7 @@ export default function HomeScreen({
               Firefly Journey Card
             </span>
             <span className="text-xs text-slate-200">
-              "{distanceKm} km under the stars in {minutes} min"
+              "{dist.value} {dist.unit} under the stars in {minutes} min"
             </span>
           </div>
           <button

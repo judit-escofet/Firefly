@@ -149,7 +149,8 @@
   }
 
   const fmtMin = (s) => s == null ? '–' : s < 60 ? '<1 min' : `${Math.round(s / 60)} min`;
-  const fmtDist = (m) => m == null ? '–' : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
+  // Miles, or feet under a tenth of a mile.
+  const fmtDist = (m) => m == null ? '–' : m / 1609.344 >= 0.1 ? `${(m / 1609.344).toFixed(1)} mi` : `${Math.round(m * 3.28084 / 10) * 10} ft`;
 
   function ago(ms, short = false) {
     const s = Math.max(0, Math.round(ms / 1000));

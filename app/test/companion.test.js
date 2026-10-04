@@ -203,22 +203,40 @@ describe('live transcription protocol', () => {
     expect(t.turns.at(-1).user_text).toBe('so today and then my exam got moved'); // answered together
   });
 
-  it('time to home: flagged due at most once every 5 minutes', async () => {
+  it('says the time to home every 5 minutes, in miles, even if she is quiet', async () => {
+    const t = setup(); // context: 6 min, 500 m to go
+    await t.brain.start();
+    t.clock.advance(ETA_GAP_MS - 1000);
+    await flush();
+    expect(t.said.some((x) => /minutes/.test(x))).toBe(false); // not before 5 minutes
+    t.clock.advance(1000);
+    await flush();
+    expect(t.said.at(-1)).toBe('About 6 minutes to go, 0.3 miles left.');
+    for (let i = 0; i < ETA_GAP_MS / 10000 + 1; i++) { // 10 s steps, like real time
+      t.clock.advance(10000);
+      await flush();
+    }
+    expect(t.said.filter((x) => /minutes/.test(x))).toHaveLength(2); // and again 5 minutes later
+    expect(t.turns.every((x) => x.context.eta_due === false)).toBe(true); // the model never adds it on its own
+  });
+
+  it('waits for a quiet moment: no time update while she is talking', async () => {
     const t = setup();
     await t.brain.start();
-    const talk = async (text) => {
-      t.brain.heard({ text, final: true });
-      t.clock.advance(TURN_SILENCE_MS);
-      await flush();
-    };
-    await talk('hey');
-    expect(t.turns.at(-1).context.eta_due).toBe(false); // just started
-    t.clock.advance(ETA_GAP_MS);
-    await flush(); // let the idle prompts that fired during those 5 minutes finish
-    await talk('how are you');
-    expect(t.turns.at(-1).context.eta_due).toBe(true); // 5 min in: due once
-    await talk('cool');
-    expect(t.turns.at(-1).context.eta_due).toBe(false); // not again right away
+    t.clock.advance(ETA_GAP_MS - 2000);
+    await flush();
+    t.brain.heard({ text: 'so anyway', final: false }); // she is mid-sentence at the 5-minute mark
+    t.clock.advance(2000);
+    await flush();
+    expect(t.said.some((x) => /minutes to go/.test(x))).toBe(false);
+    t.brain.heard({ text: 'so anyway the exam was fine', final: true });
+    t.clock.advance(TURN_SILENCE_MS); // her turn gets answered first
+    await flush();
+    t.clock.advance(10000);
+    await flush();
+    const order = t.said.slice(1);
+    expect(order[0]).toBe('Tell me more!');
+    expect(order.some((x) => /minutes to go/.test(x))).toBe(true); // then the update
   });
 
   it('fills silences less and less often: 90 s, then twice as long', async () => {

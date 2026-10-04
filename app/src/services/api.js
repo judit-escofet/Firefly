@@ -65,10 +65,27 @@ export function normalizeWalk(w, fallbackDest) {
   };
 }
 
-function localWalk(start, dest, { mock }) {
-  const points = mock ? MOCK_ROUTE : straightRoute([start.lat, start.lng], [dest.lat, dest.lng]);
+// A walk that lives only on this phone (demo mode, or the backend unreachable). With mock: the
+// demo route near the venue. Otherwise a walking route along the streets from GET /api/route
+// (OpenStreetMap), or a straight line if that can't be reached either.
+async function localWalk(start, dest, { mock }) {
+  let route = { points: MOCK_ROUTE };
+  if (!mock) {
+    route = { points: straightRoute([start.lat, start.lng], [dest.lat, dest.lng]) };
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const res = await fetch(`${BASE}/api/route?from=${start.lat},${start.lng}&to=${dest.lat},${dest.lng}`, { signal: ctrl.signal });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.points) && data.points.length > 1) route = data;
+    } catch {
+      // offline: keep the straight line
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   return normalizeWalk(
-    { walk_id: `w_local_${Math.random().toString(36).slice(2, 10)}`, share_url: null, route: { points }, destination: dest, offline: true },
+    { walk_id: `w_local_${Math.random().toString(36).slice(2, 10)}`, share_url: null, route, destination: dest, offline: true },
     dest,
   );
 }
@@ -137,7 +154,7 @@ export const api = {
     let walk;
     if (mock) {
       // The demo route near the venue, unless she picked somewhere else.
-      walk = destination ? localWalk(start, dest, { mock: false }) : localWalk(start, dest, { mock: true });
+      walk = await localWalk(start, dest, { mock: !destination });
     } else {
       const body = { user_id: profile.user_id, start, destination: { lat: dest.lat, lng: dest.lng, label: dest.label ?? 'Home' } };
       try {
@@ -152,7 +169,7 @@ export const api = {
         }
         if (!walk) {
           console.warn(`[app] /api/walks failed (${err.message}); walking on a local route`);
-          walk = localWalk(start, dest, { mock: false });
+          walk = await localWalk(start, dest, { mock: false });
         }
       }
     }

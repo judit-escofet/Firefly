@@ -5,6 +5,7 @@ import MapCanvas from '../components/MapCanvas';
 import FireflyCompanion from '../components/FireflyCompanion';
 import DispatchCallPanel from '../components/DispatchCallPanel';
 import { startDispatchCall, DEMO_DISPATCH_TEL } from '../services/dispatchCall';
+import { formatDistance } from '../services/units';
 import { PhoneCall, Clock, Navigation, X, Info } from 'lucide-react';
 
 /**
@@ -68,8 +69,7 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
   };
 
   const etaMinutes = Math.max(1, Math.ceil(eta / 60));
-  const remainingText = remaining >= 1000 ? `${(remaining / 1000).toFixed(1)}` : `${Math.round(remaining)}`;
-  const remainingUnit = remaining >= 1000 ? 'km' : 'm';
+  const { value: remainingText, unit: remainingUnit } = formatDistance(remaining);
 
   return (
     <div className="relative w-full h-[100dvh] overflow-hidden bg-twilight-950 text-white select-none">

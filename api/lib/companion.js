@@ -7,7 +7,9 @@ const MODES = new Set(['chat', 'checkin', 'calm', 'idle']);
 // The fixed system prompt from the P1 spec (Azure OpenAI there; Gemini here).
 function systemPrompt({ name, mode, memory = [], news = [], context = {} }) {
   const eta = Number.isFinite(context.eta_s) ? `${Math.max(1, Math.round(context.eta_s / 60))} minutes to home` : 'unknown';
-  const dist = Number.isFinite(context.remaining_m) ? `${Math.round(context.remaining_m)} m left` : 'unknown';
+  const miles = context.remaining_m / 1609.344;
+  const dist = !Number.isFinite(context.remaining_m) ? 'unknown'
+    : miles >= 0.1 ? `${miles.toFixed(1)} miles left` : `about ${Math.round((context.remaining_m * 3.28084) / 10) * 10} feet left`;
   const modeText = {
     chat: 'chat: normal friendly conversation.',
     idle: `chat, but she has been quiet for a while: casually bring up ONE thing, like a friend would (a news item, something from MEMORY${context.eta_due ? ', or how long until home' : ''}). Do not say she was quiet.`,

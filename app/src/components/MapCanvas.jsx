@@ -122,6 +122,9 @@ export default function MapCanvas({
         map.removeLayer(homeMarkerRef.current);
       }
 
+      // The destination's name (first part, e.g. "Newark Penn Station"), escaped for the HTML below.
+      const name = String(destination?.label || 'Home').split(',')[0].trim().slice(0, 22) || 'Home';
+      const label = name.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
       const homeHtml = `
         <div class="relative flex flex-col items-center select-none" style="transform: translate(-50%, -100%);">
           <div class="relative w-8 h-8 rounded-full bg-grove-900/90 border-2 border-firefly-400 flex items-center justify-center shadow-firefly animate-pulse-slow">
@@ -130,8 +133,8 @@ export default function MapCanvas({
             </svg>
             <div class="absolute -inset-1 rounded-full bg-firefly-400/30 blur-sm -z-10"></div>
           </div>
-          <span class="mt-1 px-2 py-0.5 rounded-full bg-grove-950/80 border border-firefly-400/40 text-[10px] font-bold text-firefly-300 uppercase tracking-widest">
-            Home
+          <span class="mt-1 px-2 py-0.5 rounded-full bg-grove-950/80 border border-firefly-400/40 text-[10px] font-bold text-firefly-300 uppercase tracking-widest whitespace-nowrap">
+            ${label}
           </span>
         </div>
       `;
