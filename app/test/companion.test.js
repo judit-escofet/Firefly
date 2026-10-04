@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createBrain, TURN_SILENCE_MS, IDLE_MS, CHECKIN_SILENCE_MS, NEWS_GAP_MS, ETA_GAP_MS } from '../src/companion/brain.js';
 import { classifyCheckinKeywords } from '../src/companion/checkinWords.js';
-import { parseServerMessage, pcm16Base64 } from '../src/companion/stt.js';
+import { parseServerMessage, pcm16Base64, createSpeechGain } from '../src/companion/stt.js';
 import { createFakeClock } from '../src/guardian/clock.js';
 
 // setImmediate, not setTimeout(0): Windows timers are ~15 ms coarse, which made the long
@@ -274,5 +274,28 @@ describe('live transcription protocol', () => {
     t.clock.advance(1000);
     await flush();
     expect(t.said).not.toContain('Turn right.');
+  });
+});
+
+describe('speech gain for transcription (quiet iPhone mics)', () => {
+  const tone = (amp, n = 1600) => Float32Array.from({ length: n }, (_, i) => amp * Math.sin(i / 5));
+  const peak = (x) => x.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+
+  it('brings quiet speech up, but no more than 12x', () => {
+    const g = createSpeechGain();
+    let out;
+    for (let i = 0; i < 60; i++) out = g(tone(0.01));
+    expect(peak(out)).toBeGreaterThan(0.1);
+    expect(peak(out)).toBeLessThanOrEqual(0.121);
+  });
+
+  it('leaves loud speech alone and never clips past full scale', () => {
+    const g = createSpeechGain();
+    let out;
+    for (let i = 0; i < 30; i++) out = g(tone(0.8));
+    expect(peak(out)).toBeCloseTo(0.8, 2);
+    const q = createSpeechGain();
+    for (let i = 0; i < 60; i++) q(tone(0.01));
+    expect(peak(q(tone(0.9)))).toBeLessThanOrEqual(1);
   });
 });

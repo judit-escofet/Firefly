@@ -48,7 +48,6 @@ export async function startScreamDetector({ onScore, onTrigger, onAudio, useHead
     mic.release();
     throw err;
   }
-  const { ctx } = mic;
   const threshold = thresholdOverride() ?? head?.threshold ?? YAMNET_ONLY_THRESHOLD;
   const k = head?.rule_k ?? 2;
   const n = head?.rule_n ?? 3;
@@ -121,9 +120,9 @@ export async function startScreamDetector({ onScore, onTrigger, onAudio, useHead
     mode: head ? 'classifier' : 'yamnet-only',
     backend: yamnet.backend,
     backendNote: yamnet.backendNote,
-    audioTime: () => ctx.currentTime, // seconds on the AudioContext clock (for latency tests)
+    audioTime: () => mic.ctx.currentTime, // seconds on the AudioContext clock (for latency tests)
     get contextState() {
-      return ctx.state; // 'suspended' on iOS if the session wasn't opened inside a tap
+      return mic.ctx.state; // 'suspended' on iOS if the session wasn't opened inside a tap
     },
     nativeRate: mic.nativeRate,
     mic,

@@ -7,6 +7,7 @@ import DispatchCallPanel from '../components/DispatchCallPanel';
 import NavigationBanner from '../components/NavigationBanner';
 import { startDispatchCall, DEMO_DISPATCH_TEL } from '../services/dispatchCall';
 import { formatDistance } from '../services/units';
+import { currentMic } from '../audio/micHub.js';
 import { PhoneCall, Info, Mic, MicOff } from 'lucide-react';
 
 /**
@@ -26,6 +27,9 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
   const [heard, setHeard] = useState(null);
   const [wakeLock, setWakeLock] = useState({ active: false, supported: true });
   const [listening, setListening] = useState('starting');
+  const [level, setLevel] = useState(0); // live mic input, 0..1
+  const [diag, setDiag] = useState(null); // tap "Listening" to see what the mic is doing
+  const [showDiag, setShowDiag] = useState(false);
 
   useEffect(() => {
     const offs = [
@@ -46,10 +50,18 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
     const t = setInterval(() => {
       const stt = modules?.companion?.status?.stt ?? '';
       const g = modules?.guardian?.status?.mode ?? '';
-      if (/error|denied/i.test(stt) || g === 'error') setListening('mic off');
+      const mic = currentMic();
+      const st = mic?.stats;
+      // Only digital silence for a few seconds = the phone isn't giving us the mic at all.
+      const silent = st && st.chunks > 60 && st.zeroChunks === st.chunks;
+      if (/error|denied/i.test(stt) || g === 'error' || silent) setListening('mic off');
       else if (stt === 'listening' || /mock/.test(stt) || g === 'classifier' || g === 'yamnet-only') setListening('listening');
       else setListening('starting');
-    }, 700);
+      // Meter: input level in dB, -60 dB (silence) .. -12 dB (talking close to the phone) → 0..1.
+      const db = mic?.level > 0 ? 20 * Math.log10(mic.level) : -100;
+      setLevel(Math.max(0, Math.min(1, (db + 60) / 48)));
+      setDiag(mic ? `${mic.diagnostics?.() ?? ''} · stt ${stt || '—'} · guardian ${g || '—'}` : `no mic · stt ${stt || '—'}`);
+    }, 250);
     return () => {
       offs.forEach((off) => off());
       clearInterval(t);
@@ -105,13 +117,23 @@ export default function WalkScreen({ walk, alerted = false, modules, onEndWalk }
               <span className="text-base text-lichen-300"> {remainingUnit}</span>
             </p>
             <div className="flex flex-col items-end min-w-0 pb-0.5">
-              <span className={`flex items-center gap-1.5 text-[0.8125rem] ${listening === 'listening' ? 'text-moss-300' : listening === 'mic off' ? 'text-ember-400' : 'text-lichen-400'}`}>
+              <button type="button" onClick={() => setShowDiag((v) => !v)} aria-label="Microphone status"
+                className={`flex items-center gap-1.5 text-[0.8125rem] ${listening === 'listening' ? 'text-moss-300' : listening === 'mic off' ? 'text-ember-400' : 'text-lichen-400'}`}>
                 {listening === 'mic off' ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                 {listening === 'listening' ? 'Listening' : listening === 'mic off' ? "Can't hear you" : 'Starting…'}
-              </span>
+                {listening !== 'mic off' && (
+                  // Live level: proof the phone is actually giving us sound.
+                  <span className="flex items-end gap-[2px] h-3 ml-0.5" aria-hidden="true">
+                    {[0.15, 0.4, 0.65, 0.9].map((th, i) => (
+                      <span key={i} className={`w-[3px] rounded-full transition-colors ${level > th ? 'bg-moss-300' : 'bg-parchment-100/20'}`} style={{ height: `${40 + i * 20}%` }} />
+                    ))}
+                  </span>
+                )}
+              </button>
               {heard && <span className="text-[0.75rem] text-lichen-300 mt-0.5 max-w-[10rem] truncate italic">“{heard}”</span>}
             </div>
           </div>
+          {showDiag && diag && <p className="mt-2 pt-2 border-t border-parchment-100/10 text-[0.6875rem] leading-snug text-lichen-400 break-words select-text">{diag}</p>}
         </NavigationBanner>
       </div>
 

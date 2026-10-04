@@ -15,6 +15,29 @@
 const CHUNK = 1600; // 100 ms at 16 kHz
 const SESSION_MS = 8 * 60e3;
 
+// Phones capture with automatic gain control OFF (the Guardian needs raw levels to hear screams),
+// and iPhones in particular then deliver very quiet audio. Speech-to-text gets its own gentle
+// automatic gain: bring her speech up to a steady level, never amplify more than 12x, and never
+// clip. Only the copy sent for transcription is changed.
+export function createSpeechGain({ target = 0.35, maxGain = 12 } = {}) {
+  let peak = 0.02; // slowly decaying recent peak of her speech
+  let gain = 1;
+  return function apply(chunk) {
+    let max = 0;
+    for (let i = 0; i < chunk.length; i++) {
+      const v = Math.abs(chunk[i]);
+      if (v > max) max = v;
+    }
+    peak = Math.max(max, peak * 0.985); // ~7 s to fall to a third
+    const want = Math.min(maxGain, Math.max(1, target / Math.max(peak, 1e-4)));
+    gain += (want - gain) * (want < gain ? 0.5 : 0.1); // drop fast on loud sounds, rise slowly
+    if (gain === 1) return chunk;
+    const out = new Float32Array(chunk.length);
+    for (let i = 0; i < chunk.length; i++) out[i] = Math.max(-1, Math.min(1, chunk[i] * gain));
+    return out;
+  };
+}
+
 export function pcm16Base64(float32) {
   const bytes = new Uint8Array(float32.length * 2);
   const view = new DataView(bytes.buffer);
@@ -57,6 +80,7 @@ export function createTranscriber({
   let midUtterance = false;
   let retry = 0;
   let reconnectTimer = null;
+  const speechGain = createSpeechGain();
 
   async function connect() {
     if (stopped) return;
@@ -128,7 +152,7 @@ export function createTranscriber({
 
   function sendChunk(chunk) {
     if (!ready || ws?.readyState !== 1) return;
-    ws.send(JSON.stringify({ realtimeInput: { audio: { data: pcm16Base64(chunk), mimeType: 'audio/pcm;rate=16000' } } }));
+    ws.send(JSON.stringify({ realtimeInput: { audio: { data: pcm16Base64(speechGain(chunk)), mimeType: 'audio/pcm;rate=16000' } } }));
     // Rotate before the 10-minute session limit, but not in the middle of a sentence.
     if (Date.now() - sessionStart > SESSION_MS && !midUtterance && !reconnectTimer) {
       sessionStart = Date.now(); // don't re-trigger while the new one connects
